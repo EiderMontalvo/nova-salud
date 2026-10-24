@@ -10,7 +10,14 @@ const pool = mysql.createPool({
     connectionLimit: 5,
     queueLimit: 0,
     connectTimeout: 10000,
-    charset: 'utf8mb4'
+    charset: 'utf8mb4',
+    timezone: '-05:00'
+});
+
+pool.on('connection', connection => {
+    connection.query("SET time_zone = '-05:00'", error => {
+        if (error) connection.destroy();
+    });
 });
 
 async function verificarConexion() {

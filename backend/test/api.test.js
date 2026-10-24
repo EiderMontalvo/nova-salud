@@ -108,7 +108,7 @@ beforeEach(() => {
 test('OpenAPI 3.0.3 válido, sin rutas inexistentes y con Bearer en categorías', () => {
   assert.equal(swagger.openapi, '3.0.3');
   assert.equal(swagger.paths['/health'], undefined);
-  assert.equal(swagger.paths['/api/usuarios'], undefined);
+  assert.ok(swagger.paths['/api/usuarios'].post);
   assert.equal(swagger.components.securitySchemes.bearerAuth.scheme, 'bearer');
   for (const [path, methods] of Object.entries(swagger.paths)) {
     for (const [method, operation] of Object.entries(methods)) {
@@ -295,8 +295,8 @@ test('CORS permite el frontend local y excluye un origen ajeno', async () => {
   assert.equal(other.headers['access-control-allow-origin'], undefined);
 });
 
-test('no hay registro público ni rutas de usuarios aún', async () => {
-  for (const path of ['/api/auth/register', '/api/usuarios']) {
+test('no hay registro público de usuarios', async () => {
+  for (const path of ['/api/auth/register']) {
     const result = await request(app).post(path).send({}).expect(404);
     assert.deepEqual(result.body, { success: false, message: 'Ruta no encontrada', errors: [] });
   }
