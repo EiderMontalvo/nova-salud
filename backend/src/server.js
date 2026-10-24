@@ -1,10 +1,11 @@
 require('dotenv').config();
 
-const app = require('./app');
+const createApp = require('./app');
 const { verificarConexion } = require('./config/database');
 const PORT = process.env.PORT || 3000;
 
 async function iniciarServidor() {
+    const app = createApp();
     console.log('Iniciando servidor...');
     const conectado = await verificarConexion();
     if (!conectado) {
@@ -17,4 +18,7 @@ async function iniciarServidor() {
     });
 }
 
-iniciarServidor();
+iniciarServidor().catch(error => {
+    console.error('No se pudo iniciar el servidor:', error.message);
+    process.exit(1);
+});

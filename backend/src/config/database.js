@@ -9,7 +9,7 @@ const pool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 5,
     queueLimit: 0,
-    connectTimeout: 10000, // Tiempo de espera para la conexión en milisegundos
+    connectTimeout: 10000,
     charset: 'utf8mb4'
 });
 
@@ -22,7 +22,6 @@ async function verificarConexion() {
     } catch (error) {
         console.error('Error al conectar a la base de datos');
         console.error('Codigo de error:', error.code);
-        console.error('Mensaje de error:', error.message);
         return false;
     }
 };
