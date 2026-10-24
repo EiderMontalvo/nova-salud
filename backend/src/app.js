@@ -5,6 +5,7 @@ const swaggerSpec = require('./config/swagger');
 const { pool: defaultPool } = require('./config/database');
 const createAuthService = require('./services/auth.service');
 const createCategoriasService = require('./services/categorias.service');
+const createProductosService = require('./services/productos.service');
 const { authenticate } = require('./middlewares/auth');
 const errorHandler = require('./middlewares/error-handler');
 const ApiError = require('./utils/api-error');
@@ -33,7 +34,7 @@ function createApp({ pool = defaultPool, jwtSecret = process.env.JWT_SECRET } = 
   app.get('/api-docs.json', (req, res) => res.json(swaggerSpec));
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   app.use('/api', createHealthRoutes(pool));
-  app.use('/api/productos', createProductosRoutes(pool));
+  app.use('/api/productos', createProductosRoutes(createProductosService(pool), auth));
   app.use('/api/auth', createAuthRoutes(authService, auth));
   app.use('/api/categorias', createCategoriasRoutes(createCategoriasService(pool), auth));
   app.use((req, res, next) => next(new ApiError(404, 'Ruta no encontrada')));

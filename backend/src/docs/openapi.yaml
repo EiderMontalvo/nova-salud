@@ -68,20 +68,6 @@ components:
         limit: {type: integer, example: 20}
         total: {type: integer, example: 1}
         total_pages: {type: integer, example: 1}
-    Producto:
-      type: object
-      required: [id_producto, codigo, nombre, descripcion, imagen, precio, stock, stock_minimo, fecha_vencimiento, id_categoria]
-      properties:
-        id_producto: {type: integer, example: 1}
-        codigo: {type: string, example: PROD-EJEMPLO}
-        nombre: {type: string, example: Paracetamol 500mg}
-        descripcion: {type: string, nullable: true}
-        imagen: {type: string, nullable: true, description: Referencia de imagen almacenada en la base}
-        precio: {type: string, example: '3.50', description: MariaDB DECIMAL se serializa como cadena para conservar precisión}
-        stock: {type: integer, example: 20}
-        stock_minimo: {type: integer, example: 5}
-        fecha_vencimiento: {type: string, format: date-time, nullable: true, description: Fecha SQL serializada por mysql2 como ISO 8601}
-        id_categoria: {type: integer, nullable: true, example: 1}
   parameters:
     CategoriaId:
       name: id
@@ -377,18 +363,4 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
-        '500': {$ref: '#/components/responses/ServerError'}
-  /api/productos:
-    get:
-      tags: [Productos]
-      summary: Listar productos activos
-      description: 'Endpoint inicial público y sin paginación ni filtros. Devuelve un array, a diferencia de categorías. Incluye stock y referencias de imágenes. Este módulo todavía no implementa escrituras.'
-      responses:
-        '200':
-          description: Productos activos ordenados por id descendente. Array vacío si no hay resultados
-          content:
-            application/json:
-              schema:
-                type: array
-                items: {$ref: '#/components/schemas/Producto'}
         '500': {$ref: '#/components/responses/ServerError'}

@@ -1,31 +1,18 @@
 const express = require('express');
-const ApiError = require('../utils/api-error');
+const validate = require('../middlewares/validate');
+const { requireAdmin } = require('../middlewares/auth');
+const schemas = require('../validators/productos.validators');
+const createProductosController = require('../controllers/productos.controller');
 
-function createProductosRoutes(pool) {
+function createProductosRoutes(service, authenticate) {
   const router = express.Router();
-  router.get('/', async (req, res) => {
-    try {
-      const [productos] = await pool.query(`
-        SELECT
-          id_producto,
-          codigo,
-          nombre,
-          descripcion,
-          imagen,
-          precio,
-          stock,
-          stock_minimo,
-          fecha_vencimiento,
-          id_categoria
-        FROM productos
-        WHERE activo = 1
-        ORDER BY id_producto DESC
-      `);
-      res.json(productos);
-    } catch {
-      throw new ApiError(500, 'Error al obtener productos');
-    }
-  });
+  const controller = createProductosController(service);
+  router.use(authenticate);
+  router.get('/', validate({ query: schemas.query }), controller.list);
+  router.get('/:id', validate({ params: schemas.params }), controller.get);
+  router.post('/', requireAdmin, validate({ body: schemas.create }), controller.create);
+  router.put('/:id', requireAdmin, validate({ params: schemas.params, body: schemas.update }), controller.update);
+  router.delete('/:id', requireAdmin, validate({ params: schemas.params }), controller.deactivate);
   return router;
 }
 

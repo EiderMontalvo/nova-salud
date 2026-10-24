@@ -38,7 +38,6 @@ const database = {
   async query(sql) {
     if (failDatabase) throw Object.assign(new Error('secret-internal-database-error'), { code: 'ECONNREFUSED' });
     if (sql === 'SELECT 1') return [[{ 1: 1 }]];
-    if (sql.includes('FROM productos')) return [[]];
     throw new Error(`Unexpected SQL: ${sql}`);
   },
   async execute(sql, values) {
@@ -116,7 +115,9 @@ test('OpenAPI 3.0.3 válido, sin rutas inexistentes y con Bearer en categorías'
       if (method === 'parameters') continue;
       assert.ok(operation.tags.length);
       assert.ok(operation.summary);
-      if (path.startsWith('/api/categorias')) assert.deepEqual(operation.security, [{ bearerAuth: [] }]);
+      if (path.startsWith('/api/categorias') || path.startsWith('/api/productos')) {
+        assert.deepEqual(operation.security, [{ bearerAuth: [] }]);
+      }
     }
   }
 });
@@ -125,7 +126,7 @@ test('Swagger UI, especificación JSON, raíz y salud disponibles', async () => 
   await request(app).get('/api-docs/').expect(200).expect('Content-Type', /html/);
   const spec = await request(app).get('/api-docs.json').expect(200);
   assert.equal(spec.body.openapi, '3.0.3');
-  for (const path of ['/', '/api/health', '/api/health/db', '/api/productos']) {
+  for (const path of ['/', '/api/health', '/api/health/db']) {
     const response = await request(app).get(path).expect(200);
     checkContract(path, 'get', 200, response.body);
   }
@@ -281,7 +282,7 @@ test('caída de MariaDB no expone detalles internos y salud usa 503', async () =
   failDatabase = true;
   const health = await request(app).get('/api/health/db').expect(503);
   checkContract('/api/health/db', 'get', 503, health.body);
-  const products = await request(app).get('/api/productos').expect(500);
+  const products = await request(app).get('/api/productos').auth(token(), { type: 'bearer' }).expect(500);
   checkContract('/api/productos', 'get', 500, products.body);
   const auth = await request(app).get('/api/categorias').auth(token(), { type: 'bearer' }).expect(500);
   assert.equal(JSON.stringify(auth.body).includes('secret-internal'), false);
@@ -294,8 +295,8 @@ test('CORS permite el frontend local y excluye un origen ajeno', async () => {
   assert.equal(other.headers['access-control-allow-origin'], undefined);
 });
 
-test('no hay registro público ni escrituras de productos aún', async () => {
-  for (const path of ['/api/auth/register', '/api/usuarios', '/api/productos']) {
+test('no hay registro público ni rutas de usuarios aún', async () => {
+  for (const path of ['/api/auth/register', '/api/usuarios']) {
     const result = await request(app).post(path).send({}).expect(404);
     assert.deepEqual(result.body, { success: false, message: 'Ruta no encontrada', errors: [] });
   }
