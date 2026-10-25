@@ -1,17 +1,15 @@
 const express = require('express');
-const { z } = require('zod');
-const validate = require('../middlewares/validate');
-const { requireAdmin } = require('../middlewares/auth');
-const schemas = require('../validators/ventas.validators');
-const createVentasController = require('../controllers/ventas.controller');
-function createVentasRoutes(service, authenticate) {
-  const router = express.Router();
-  const controller = createVentasController(service);
-  router.use(authenticate);
-  router.get('/', validate({ query: schemas.query }), controller.list);
-  router.get('/:id', validate({ params: schemas.params }), controller.get);
-  router.post('/', validate({ body: schemas.create }), controller.create);
-  router.patch('/:id/anular', requireAdmin, validate({ params: schemas.params, body: z.object({}).strict().default({}) }), controller.cancel);
-  return router;
-}
-module.exports = createVentasRoutes;
+const validar = require('../middlewares/validar');
+const { autenticar, soloAdmin } = require('../middlewares/autenticacion');
+const esquemas = require('../validators/ventas.validators');
+const controlador = require('../controllers/ventas.controller');
+
+const router = express.Router();
+router.use(autenticar);
+
+router.get('/', validar({ query: esquemas.consulta }), controlador.listar);
+router.get('/:id', validar({ params: esquemas.parametros }), controlador.obtener);
+router.post('/', validar({ body: esquemas.crear }), controlador.registrar);
+router.patch('/:id/anular', soloAdmin, validar({ params: esquemas.parametros, body: esquemas.anular }), controlador.anular);
+
+module.exports = router;

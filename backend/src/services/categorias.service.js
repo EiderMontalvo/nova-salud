@@ -1,50 +1,42 @@
-const ApiError = require('../utils/api-error');
+const { pool } = require('../config/database');
+const ErrorApi = require('../utils/error-api');
+const paginacion = require('../utils/paginacion');
 
-function category(row) {
-  return { ...row, activo: Boolean(row.activo) };
+const formatear = fila => ({ ...fila, activo: Boolean(fila.activo) });
+
+async function obtener(id) {
+  const [filas] = await pool.execute('SELECT id_categoria, nombre, descripcion, activo FROM categorias WHERE id_categoria = ?', [id]);
+  if (!filas[0]) throw new ErrorApi(404, 'Categoría no encontrada');
+  return formatear(filas[0]);
 }
 
-function createCategoriasService(pool) {
-  async function getById(id) {
-    const [rows] = await pool.execute(
-      'SELECT id_categoria, nombre, descripcion, activo FROM categorias WHERE id_categoria = ?', [id]
-    );
-    if (!rows[0]) throw new ApiError(404, 'Categoría no encontrada');
-    return category(rows[0]);
-  }
-
-  return {
-    getById,
-    async list({ page, limit, search, activo }) {
-      const filter = [Number(activo), `%${search}%`];
-      const [[{ total }]] = await pool.execute(
-        'SELECT COUNT(*) AS total FROM categorias WHERE activo = ? AND nombre LIKE ?', filter
-      );
-      const [rows] = await pool.execute(
-        'SELECT id_categoria, nombre, descripcion, activo FROM categorias WHERE activo = ? AND nombre LIKE ? ORDER BY id_categoria DESC LIMIT ? OFFSET ?',
-        [...filter, limit, (page - 1) * limit]
-      );
-      return { data: rows.map(category), pagination: { page, limit, total: Number(total), total_pages: Math.ceil(total / limit) } };
-    },
-    async create({ nombre, descripcion }) {
-      const [result] = await pool.execute(
-        'INSERT INTO categorias (nombre, descripcion, activo) VALUES (?, ?, 1)', [nombre, descripcion]
-      );
-      return getById(result.insertId);
-    },
-    async update(id, { nombre, descripcion, activo }) {
-      await getById(id);
-      await pool.execute(
-        'UPDATE categorias SET nombre = ?, descripcion = ?, activo = COALESCE(?, activo) WHERE id_categoria = ?',
-        [nombre, descripcion, activo === undefined ? null : Number(activo), id]
-      );
-      return getById(id);
-    },
-    async deactivate(id) {
-      await getById(id);
-      await pool.execute('UPDATE categorias SET activo = 0 WHERE id_categoria = ?', [id]);
-    }
-  };
+async function listar({ page, limit, search, activo }) {
+  const filtro = [Number(activo), `%${search}%`];
+  const [[{ total }]] = await pool.execute('SELECT COUNT(*) AS total FROM categorias WHERE activo = ? AND nombre LIKE ?', filtro);
+  const [filas] = await pool.execute(
+    'SELECT id_categoria, nombre, descripcion, activo FROM categorias WHERE activo = ? AND nombre LIKE ? ORDER BY id_categoria DESC LIMIT ? OFFSET ?',
+    [...filtro, limit, (page - 1) * limit]
+  );
+  return { data: filas.map(formatear), pagination: paginacion(page, limit, total) };
 }
 
-module.exports = createCategoriasService;
+async function crear({ nombre, descripcion }) {
+  const [resultado] = await pool.execute('INSERT INTO categorias (nombre, descripcion, activo) VALUES (?, ?, 1)', [nombre, descripcion]);
+  return obtener(resultado.insertId);
+}
+
+async function actualizar(id, { nombre, descripcion, activo }) {
+  await obtener(id);
+  await pool.execute(
+    'UPDATE categorias SET nombre = ?, descripcion = ?, activo = COALESCE(?, activo) WHERE id_categoria = ?',
+    [nombre, descripcion, activo === undefined ? null : Number(activo), id]
+  );
+  return obtener(id);
+}
+
+async function desactivar(id) {
+  await obtener(id);
+  await pool.execute('UPDATE categorias SET activo = 0 WHERE id_categoria = ?', [id]);
+}
+
+module.exports = { obtener, listar, crear, actualizar, desactivar };

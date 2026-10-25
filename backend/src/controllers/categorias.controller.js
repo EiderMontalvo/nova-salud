@@ -1,27 +1,28 @@
-function createCategoriasController(service) {
-  return {
-    async list(req, res) {
-      const result = await service.list(req.validated.query);
-      res.json({ success: true, message: 'Categorías obtenidas', ...result });
-    },
-    async get(req, res) {
-      const data = await service.getById(req.validated.params.id);
-      res.json({ success: true, message: 'Categoría obtenida', data });
-    },
-    async create(req, res) {
-      const data = await service.create(req.validated.body);
-      res.status(201).location(`/api/categorias/${data.id_categoria}`)
-        .json({ success: true, message: 'Categoría registrada', data });
-    },
-    async update(req, res) {
-      const data = await service.update(req.validated.params.id, req.validated.body);
-      res.json({ success: true, message: 'Categoría actualizada', data });
-    },
-    async deactivate(req, res) {
-      await service.deactivate(req.validated.params.id);
-      res.status(204).end();
-    }
-  };
+const categoriasService = require('../services/categorias.service');
+
+async function listar(req, res) {
+  const resultado = await categoriasService.listar(req.validado.query);
+  res.json({ success: true, message: 'Categorías obtenidas', ...resultado });
 }
 
-module.exports = createCategoriasController;
+async function obtener(req, res) {
+  const data = await categoriasService.obtener(req.validado.params.id);
+  res.json({ success: true, message: 'Categoría obtenida', data });
+}
+
+async function crear(req, res) {
+  const data = await categoriasService.crear(req.validado.body);
+  res.status(201).json({ success: true, message: 'Categoría registrada', data });
+}
+
+async function actualizar(req, res) {
+  const data = await categoriasService.actualizar(req.validado.params.id, req.validado.body);
+  res.json({ success: true, message: 'Categoría actualizada', data });
+}
+
+async function desactivar(req, res) {
+  await categoriasService.desactivar(req.validado.params.id);
+  res.status(204).end();
+}
+
+module.exports = { listar, obtener, crear, actualizar, desactivar };

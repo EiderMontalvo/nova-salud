@@ -1,19 +1,16 @@
 const express = require('express');
-const validate = require('../middlewares/validate');
-const { requireAdmin } = require('../middlewares/auth');
-const schemas = require('../validators/categorias.validators');
-const createCategoriasController = require('../controllers/categorias.controller');
+const validar = require('../middlewares/validar');
+const { autenticar, soloAdmin } = require('../middlewares/autenticacion');
+const esquemas = require('../validators/categorias.validators');
+const controlador = require('../controllers/categorias.controller');
 
-function createCategoriasRoutes(service, authenticate) {
-  const router = express.Router();
-  const controller = createCategoriasController(service);
-  router.use(authenticate);
-  router.get('/', validate({ query: schemas.query }), controller.list);
-  router.get('/:id', validate({ params: schemas.params }), controller.get);
-  router.post('/', requireAdmin, validate({ body: schemas.create }), controller.create);
-  router.put('/:id', requireAdmin, validate({ params: schemas.params, body: schemas.update }), controller.update);
-  router.delete('/:id', requireAdmin, validate({ params: schemas.params }), controller.deactivate);
-  return router;
-}
+const router = express.Router();
+router.use(autenticar);
 
-module.exports = createCategoriasRoutes;
+router.get('/', validar({ query: esquemas.consulta }), controlador.listar);
+router.get('/:id', validar({ params: esquemas.parametros }), controlador.obtener);
+router.post('/', soloAdmin, validar({ body: esquemas.crear }), controlador.crear);
+router.put('/:id', soloAdmin, validar({ params: esquemas.parametros, body: esquemas.actualizar }), controlador.actualizar);
+router.delete('/:id', soloAdmin, validar({ params: esquemas.parametros }), controlador.desactivar);
+
+module.exports = router;

@@ -1,24 +1,18 @@
 const express = require('express');
-const validate = require('../middlewares/validate');
-const { requireAdmin } = require('../middlewares/auth');
-const schemas = require('../validators/productos.validators');
-const createProductosController = require('../controllers/productos.controller');
-const imageUpload = require('../middlewares/image-upload');
+const validar = require('../middlewares/validar');
+const subirImagen = require('../middlewares/subir-imagen');
+const { autenticar, soloAdmin } = require('../middlewares/autenticacion');
+const esquemas = require('../validators/productos.validators');
+const controlador = require('../controllers/productos.controller');
 
-function createProductosRoutes(service, authenticate, images) {
-  const router = express.Router();
-  const controller = createProductosController(service);
-  router.use(authenticate);
-  router.get('/', validate({ query: schemas.query }), controller.list);
-  router.get('/:id', validate({ params: schemas.params }), controller.get);
-  router.post('/:id/imagen', requireAdmin, validate({ params: schemas.params }), imageUpload, async (req, res) => {
-    const data = await images.upload(req.validated.params.id, req.file);
-    res.json({ success: true, message: 'Imagen actualizada', data });
-  });
-  router.post('/', requireAdmin, validate({ body: schemas.create }), controller.create);
-  router.put('/:id', requireAdmin, validate({ params: schemas.params, body: schemas.update }), controller.update);
-  router.delete('/:id', requireAdmin, validate({ params: schemas.params }), controller.deactivate);
-  return router;
-}
+const router = express.Router();
+router.use(autenticar);
 
-module.exports = createProductosRoutes;
+router.get('/', validar({ query: esquemas.consulta }), controlador.listar);
+router.get('/:id', validar({ params: esquemas.parametros }), controlador.obtener);
+router.post('/', soloAdmin, validar({ body: esquemas.crear }), controlador.crear);
+router.put('/:id', soloAdmin, validar({ params: esquemas.parametros, body: esquemas.actualizar }), controlador.actualizar);
+router.delete('/:id', soloAdmin, validar({ params: esquemas.parametros }), controlador.desactivar);
+router.post('/:id/imagen', soloAdmin, validar({ params: esquemas.parametros }), subirImagen, controlador.subirImagen);
+
+module.exports = router;

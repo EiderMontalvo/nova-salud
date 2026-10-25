@@ -31,10 +31,6 @@ async function verificarConexion() {
         console.error('Codigo de error:', error.code);
         return false;
     }
-};
-
-
-module.exports = {
-    pool,
-    verificarConexion
 }
+
+module.exports = { pool, verificarConexion };

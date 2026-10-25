@@ -1,14 +1,15 @@
 const { z } = require('zod');
-const { params, pagination } = require('./shared');
-const { admin } = require('./auth.validators');
-const password = admin.shape.password;
-const fields = {
+const { parametros, paginacion, busqueda, activo, correo } = require('./comunes');
+const { passwordNueva } = require('./auth.validators');
+
+const campos = {
   nombre: z.string().trim().min(1).max(100),
-  correo: z.email().max(100).transform(value => value.toLowerCase()),
+  correo,
   rol: z.enum(['ADMIN', 'VENDEDOR'])
 };
-const create = z.object({ ...fields, password }).strict();
-const update = z.object({ ...fields, password: password.optional(), activo: z.boolean().optional() }).strict();
-const query = z.object({ ...pagination, search: z.string().trim().max(100).default(''),
-  activo: z.enum(['true', 'false']).transform(value => value === 'true').optional() }).strict();
-module.exports = { params, create, update, query };
+
+const crear = z.object({ ...campos, password: passwordNueva }).strict();
+const actualizar = z.object({ ...campos, password: passwordNueva.optional(), activo: z.boolean().optional() }).strict();
+const consulta = z.object({ ...paginacion, search: busqueda(), activo: activo.optional() }).strict();
+
+module.exports = { parametros, crear, actualizar, consulta };
