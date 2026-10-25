@@ -1,5 +1,5 @@
 
-node_modules/
+node_modules
 
 .env
 .env.*
@@ -19,3 +19,4 @@ Thumbs.db
 .vscode/
 
 backend/uploads/
+backend/tmp/

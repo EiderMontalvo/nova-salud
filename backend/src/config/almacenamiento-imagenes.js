@@ -1,4 +1,6 @@
 const path = require('node:path').posix;
+const rutaLocal = require('node:path');
+const fs = require('node:fs/promises');
 const crypto = require('node:crypto');
 const Client = require('ssh2-sftp-client');
 const ErrorApi = require('../utils/error-api');
@@ -40,8 +42,31 @@ async function conSftp(operacion) {
   }
 }
 
+// Con IMAGE_LOCAL_DIRECTORY las imágenes se guardan en una carpeta del mismo servidor.
+function leerConfiguracionLocal(env = process.env) {
+  if (!env.IMAGE_PUBLIC_URL) throw new ErrorApi(503, 'Configura IMAGE_PUBLIC_URL en el servidor');
+  let base;
+  try { base = new URL(env.IMAGE_PUBLIC_URL); } catch { throw new ErrorApi(503, 'Configuración de URL de imágenes inválida'); }
+  if (!['https:', 'http:'].includes(base.protocol) || base.username || base.password || base.search || base.hash) {
+    throw new ErrorApi(503, 'Configuración de URL de imágenes inválida');
+  }
+  return { urlBase: base.href.replace(/\/$/, ''), directorio: rutaLocal.resolve(env.IMAGE_LOCAL_DIRECTORY) };
+}
+
 async function subirArchivo(buffer) {
   const clave = `${crypto.randomUUID()}.webp`;
+  if (process.env.IMAGE_LOCAL_DIRECTORY) {
+    const config = leerConfiguracionLocal();
+    const url = `${config.urlBase}/${clave}`;
+    if (url.length > 255) throw new ErrorApi(503, 'La URL de imágenes excede la capacidad de la base de datos');
+    try {
+      await fs.mkdir(config.directorio, { recursive: true });
+      await fs.writeFile(rutaLocal.join(config.directorio, clave), buffer, { mode: 0o644 });
+    } catch {
+      throw new ErrorApi(502, 'No se pudo guardar la imagen en el servidor');
+    }
+    return { clave, url };
+  }
   return conSftp(async (cliente, config) => {
     const url = `${config.urlBase}/${clave}`;
     if (url.length > 255) throw new ErrorApi(503, 'La URL de imágenes excede la capacidad de la base de datos');
@@ -53,6 +78,7 @@ async function subirArchivo(buffer) {
 
 async function eliminarArchivo(clave) {
   if (!/^[0-9a-f-]{36}\.webp$/.test(clave)) throw new ErrorApi(400, 'Identificador de imagen inválido');
+  if (process.env.IMAGE_LOCAL_DIRECTORY) return fs.unlink(rutaLocal.join(leerConfiguracionLocal().directorio, clave));
   return conSftp((cliente, config) => cliente.delete(path.join(config.directorio, clave)));
 }
 

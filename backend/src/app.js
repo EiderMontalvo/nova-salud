@@ -13,9 +13,14 @@ function crearApp() {
     .split(',').map(origen => origen.trim()).filter(Boolean);
 
   app.disable('x-powered-by');
+  // En el hosting la API corre detrás de un proxy; sin esto el límite de login vería una sola IP.
+  if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
   app.use(cors({ origin: origenes }));
   app.use(express.json({ limit: '1mb' }));
 
+  if (process.env.IMAGE_LOCAL_DIRECTORY) {
+    app.use('/uploads/productos', express.static(process.env.IMAGE_LOCAL_DIRECTORY, { maxAge: '30d', index: false, dotfiles: 'deny' }));
+  }
   app.get('/', (req, res) => res.json({ name: 'Nova Salud API', version: '1.0.0', status: 'online' }));
   app.use('/api', require('./routes/salud.routes'));
   app.use('/api/auth', require('./routes/auth.routes'));
