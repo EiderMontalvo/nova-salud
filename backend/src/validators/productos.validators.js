@@ -1,5 +1,5 @@
 const { z } = require('zod');
-const { id, idTexto, parametros, paginacion, busqueda, activo, fecha } = require('./comunes');
+const { id, idTexto, parametros, paginacion, busqueda, activo, fecha, imagen } = require('./comunes');
 
 const stock = z.number().int().min(0).max(2147483647);
 // Acepta 3.5 o "3.50" y siempre devuelve "3.50", igual que DECIMAL(10,2).
@@ -9,14 +9,6 @@ const precio = z.union([z.string(), z.number()]).transform(String)
     const [entero, decimal = ''] = valor.split('.');
     return `${entero}.${decimal.padEnd(2, '0')}`;
   });
-const imagen = z.url().max(255).refine(valor => {
-  try {
-    const url = new URL(valor);
-    return url.protocol === 'https:' && !url.username && !url.password;
-  } catch {
-    return false;
-  }
-}, 'La imagen debe ser una URL HTTPS sin credenciales');
 
 const consulta = z.object({
   ...paginacion,

@@ -12,5 +12,13 @@ const activo = z.enum(['true', 'false']).transform(valor => valor === 'true');
 const listado = z.object({ ...paginacion, search: busqueda() }).strict();
 const fecha = z.iso.date().refine(valor => valor >= '1000-01-01', 'La fecha mínima es 1000-01-01');
 const correo = z.email().max(100).transform(valor => valor.toLowerCase());
+const imagen = z.url().max(255).refine(valor => {
+  try {
+    const url = new URL(valor);
+    return url.protocol === 'https:' && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}, 'La imagen debe ser una URL HTTPS sin credenciales');
 
-module.exports = { id, idTexto, parametros, paginacion, busqueda, activo, listado, fecha, correo };
+module.exports = { id, idTexto, parametros, paginacion, busqueda, activo, listado, fecha, correo, imagen };

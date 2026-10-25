@@ -80,6 +80,7 @@ const productos = await fetch(`${API}/productos?search=para`, {
 | POST | `/api/productos/:id/imagen` | ADMIN | Subir imagen (multipart, campo `imagen`) |
 | GET | `/api/categorias`, `/api/categorias/:id` | todos | Listar y ver |
 | POST, PUT, DELETE | `/api/categorias`, `/api/categorias/:id` | ADMIN | Crear, editar, desactivar |
+| POST | `/api/categorias/:id/imagen` | ADMIN | Subir imagen (multipart, campo `imagen`) |
 | GET, POST | `/api/clientes` | todos | Listar (busca por nombre o documento) y crear |
 | GET, PUT | `/api/clientes/:id` | todos | Ver y editar |
 | GET, POST | `/api/ventas` | todos | Historial (`desde`, `hasta`, `estado`, `id_cliente`) y registrar |
@@ -131,8 +132,15 @@ En `PUT` se envían todos los campos (más `activo` opcional). Precios y totales
 
 **Usuario**: `{ "nombre": "...", "correo": "...", "password": "mínimo 12 caracteres", "rol": "VENDEDOR" }`
 
-**Categoría**: `{ "nombre": "Analgésicos", "descripcion": null }`
+**Categoría**: `{ "nombre": "Analgésicos", "descripcion": null, "imagen": null }`
 
 ## Imágenes
 
-`POST /api/productos/:id/imagen` recibe un `FormData` con el archivo en el campo `imagen` (JPEG, PNG o WebP, hasta 5 MB). La API la convierte a WebP, la sube por SFTP al hosting y guarda la URL en el producto. Requiere las variables `IMAGE_*` del `.env`; sin ellas responde 503. En lugar de subir archivos, también se puede guardar una URL HTTPS en el campo `imagen` del producto.
+`POST /api/productos/:id/imagen` y `POST /api/categorias/:id/imagen` reciben un `FormData` con el archivo en el campo `imagen` (JPEG, PNG o WebP, hasta 5 MB). La API la convierte a WebP, la guarda y deja la URL pública en el campo `imagen`. En lugar de subir archivos, también se puede guardar una URL HTTPS en ese campo.
+
+Dónde se guarda:
+
+- **Carpeta local** (producción en BanaHosting): `IMAGE_LOCAL_DIRECTORY` es la carpeta del servidor e `IMAGE_PUBLIC_URL` la URL con la que se publica, por ejemplo `/home/<usuario>/api-novasalud.im-ra.com/uploads/productos` y `https://api-novasalud.im-ra.com/uploads/productos`.
+- **SFTP**: sin `IMAGE_LOCAL_DIRECTORY` se usan las variables `IMAGE_SFTP_*`; sin ellas la subida responde 503.
+
+Si la base ya existía antes de las imágenes de categoría: `ALTER TABLE categorias ADD COLUMN imagen VARCHAR(255) NULL AFTER descripcion;`

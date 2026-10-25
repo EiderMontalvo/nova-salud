@@ -1,5 +1,6 @@
 const express = require('express');
 const validar = require('../middlewares/validar');
+const subirImagen = require('../middlewares/subir-imagen');
 const { autenticar, soloAdmin } = require('../middlewares/autenticacion');
 const esquemas = require('../validators/categorias.validators');
 const controlador = require('../controllers/categorias.controller');
@@ -12,5 +13,6 @@ router.get('/:id', validar({ params: esquemas.parametros }), controlador.obtener
 router.post('/', soloAdmin, validar({ body: esquemas.crear }), controlador.crear);
 router.put('/:id', soloAdmin, validar({ params: esquemas.parametros, body: esquemas.actualizar }), controlador.actualizar);
 router.delete('/:id', soloAdmin, validar({ params: esquemas.parametros }), controlador.desactivar);
+router.post('/:id/imagen', soloAdmin, validar({ params: esquemas.parametros }), subirImagen, controlador.subirImagen);
 
 module.exports = router;

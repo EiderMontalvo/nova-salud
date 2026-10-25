@@ -6,7 +6,7 @@ CREATE TABLE usuarios (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE categorias (
   id_categoria INT PRIMARY KEY AUTO_INCREMENT, nombre VARCHAR(100) NOT NULL UNIQUE,
-  descripcion VARCHAR(255), activo TINYINT(1) NOT NULL DEFAULT 1
+  descripcion VARCHAR(255), imagen VARCHAR(255), activo TINYINT(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE productos (
   id_producto INT PRIMARY KEY AUTO_INCREMENT, id_categoria INT NOT NULL,

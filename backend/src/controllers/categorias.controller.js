@@ -1,4 +1,5 @@
 const categoriasService = require('../services/categorias.service');
+const imagenesService = require('../services/imagenes.service');
 
 async function listar(req, res) {
   const resultado = await categoriasService.listar(req.validado.query);
@@ -25,4 +26,9 @@ async function desactivar(req, res) {
   res.status(204).end();
 }
 
-module.exports = { listar, obtener, crear, actualizar, desactivar };
+async function subirImagen(req, res) {
+  const data = await imagenesService.subirImagenCategoria(req.validado.params.id, req.file);
+  res.json({ success: true, message: 'Imagen actualizada', data });
+}
+
+module.exports = { listar, obtener, crear, actualizar, desactivar, subirImagen };
