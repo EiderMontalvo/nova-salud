@@ -9,20 +9,19 @@ import AdminCategorias from './pages/AdminCategorias';
 import Ventas from './pages/Ventas';
 import StockBajo from './pages/StockBajo';
 
-function ProtectedRoute({ children, adminOnly = false }) {
+function RutaProtegida({ children, soloAdmin = false }) {
   const { usuario, loading, isAdmin } = useAuth();
 
   if (loading) {
     return (
-      <div className="loading-screen">
-        <div className="spinner" />
-        <p>Cargando...</p>
+      <div className="boot" aria-busy="true">
+        <span className="spinner" />
       </div>
     );
   }
 
   if (!usuario) return <Navigate to="/login" replace />;
-  if (adminOnly && !isAdmin) return <Navigate to="/" replace />;
+  if (soloAdmin && !isAdmin) return <Navigate to="/" replace />;
 
   return children;
 }
@@ -35,9 +34,9 @@ export default function App() {
       <Route
         path="/"
         element={
-          <ProtectedRoute>
+          <RutaProtegida>
             <Layout />
-          </ProtectedRoute>
+          </RutaProtegida>
         }
       >
         <Route index element={<Catalogo />} />
@@ -47,17 +46,17 @@ export default function App() {
         <Route
           path="admin/productos"
           element={
-            <ProtectedRoute adminOnly>
+            <RutaProtegida soloAdmin>
               <AdminProductos />
-            </ProtectedRoute>
+            </RutaProtegida>
           }
         />
         <Route
           path="admin/categorias"
           element={
-            <ProtectedRoute adminOnly>
+            <RutaProtegida soloAdmin>
               <AdminCategorias />
-            </ProtectedRoute>
+            </RutaProtegida>
           }
         />
       </Route>

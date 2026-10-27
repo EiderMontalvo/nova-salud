@@ -20,3 +20,9 @@ Thumbs.db
 
 backend/uploads/
 backend/tmp/
+
+# Artefactos de trabajo de diseño
+.impeccable/review/
+.impeccable/refs/
+.impeccable/mocks/
+.impeccable/live/

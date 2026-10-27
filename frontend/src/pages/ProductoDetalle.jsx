@@ -1,88 +1,139 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, Plus, Check, Pencil } from 'lucide-react';
 import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
+import { useVenta } from '../context/VentaContext';
+import StockEstado from '../components/StockEstado';
+import Notice from '../components/Notice';
+import { SIN_IMAGEN } from '../components/ProductTile';
+import { mensajeError } from '../lib/errores';
+import { soles, fecha, estadoVencimiento } from '../lib/formato';
+import './Detalle.css';
 
 export default function ProductoDetalle() {
   const { id } = useParams();
+  const { isAdmin } = useAuth();
+  const { items, agregar } = useVenta();
   const [producto, setProducto] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [categoria, setCategoria] = useState('');
+  const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setLoading(true);
+    let vigente = true;
+    setCargando(true);
+    setError('');
+
     api(`/productos/${id}`)
-      .then((res) => setProducto(res.data))
-      .catch((err) => setError(err?.message || 'Producto no encontrado'))
-      .finally(() => setLoading(false));
+      .then(async (res) => {
+        if (!vigente) return;
+        setProducto(res.data);
+        const cat = await api(`/categorias/${res.data.id_categoria}`).catch(() => null);
+        if (vigente) setCategoria(cat?.data?.nombre || '');
+      })
+      .catch((err) => vigente && setError(mensajeError(err, 'Producto no encontrado')))
+      .finally(() => vigente && setCargando(false));
+
+    return () => {
+      vigente = false;
+    };
   }, [id]);
 
-  if (loading) {
+  if (cargando) {
     return (
-      <div className="loading-screen" style={{ minHeight: 300 }}>
-        <div className="spinner" />
+      <div className="detalle">
+        <div className="skeleton detalle-foto" />
+        <div className="stack">
+          <div className="skeleton" style={{ height: 40, width: '70%' }} />
+          <div className="skeleton" style={{ height: 120 }} />
+        </div>
       </div>
     );
   }
 
   if (error || !producto) {
     return (
-      <div>
-        <div className="error-banner">{error || 'Producto no encontrado'}</div>
-        <Link to="/" className="btn btn-outline">
-          ← Volver al catálogo
-        </Link>
+      <div className="stack" style={{ maxWidth: 520 }}>
+        <Notice>{error || 'Producto no encontrado'}</Notice>
+        <div>
+          <Link to="/" className="btn btn-ghost">
+            <ArrowLeft size={16} /> Volver al catálogo
+          </Link>
+        </div>
       </div>
     );
   }
 
+  const enVenta = items.find((i) => i.id_producto === producto.id_producto);
+  const vence = estadoVencimiento(producto.fecha_vencimiento);
+  const agotado = producto.stock === 0;
+
   return (
     <div>
-      <Link to="/" className="btn btn-outline btn-sm" style={{ marginBottom: '1.5rem' }}>
-        ← Volver
+      <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: '1.5rem' }}>
+        <ArrowLeft size={14} /> Catálogo
       </Link>
 
-      <div className="card" style={{ display: 'flex', flexWrap: 'wrap', gap: 0 }}>
-        <div style={{ flex: '1 1 280px', maxWidth: 400, background: '#f1f5f9' }}>
-          <img
-            src={producto.imagen || '/sin-imagen.svg'}
-            alt={producto.nombre}
-            style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover' }}
-          />
+      <div className="detalle">
+        <div className="detalle-foto">
+          <img src={producto.imagen || SIN_IMAGEN} alt={producto.nombre} />
         </div>
 
-        <div style={{ flex: '1 1 300px', padding: '2rem' }}>
-          <span className="text-sm text-muted">{producto.codigo}</span>
-          <h1 style={{ fontSize: '1.5rem', margin: '0.25rem 0 1rem' }}>{producto.nombre}</h1>
+        <div className="detalle-info">
+          <h1 className="page-title detalle-titulo">{producto.nombre}</h1>
 
-          {producto.descripcion && (
-            <p className="text-muted" style={{ marginBottom: '1.25rem' }}>
-              {producto.descripcion}
-            </p>
-          )}
+          {!producto.activo && <Notice tipo="warn">Este producto está desactivado y no aparece en el catálogo.</Notice>}
 
-          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--primary-dark)', marginBottom: '1rem' }}>
-            S/ {producto.precio}
+          <div className="detalle-precio num">{soles(producto.precio)}</div>
+
+          <dl className="detalle-datos">
+            <div>
+              <dt>Código</dt>
+              <dd className="num">{producto.codigo}</dd>
+            </div>
+            <div>
+              <dt>Categoría</dt>
+              <dd>{categoria || '—'}</dd>
+            </div>
+            <div>
+              <dt>Stock</dt>
+              <dd>
+                <StockEstado stock={producto.stock} minimo={producto.stock_minimo} />
+              </dd>
+            </div>
+            <div>
+              <dt>Vencimiento</dt>
+              <dd className="num">
+                {fecha(producto.fecha_vencimiento)}
+                {vence && <span className={`tag tag-${vence.tipo}`} style={{ marginLeft: 8 }}>{vence.texto}</span>}
+              </dd>
+            </div>
+          </dl>
+
+          {producto.descripcion && <p className="detalle-desc">{producto.descripcion}</p>}
+
+          <div className="detalle-acciones">
+            <button
+              type="button"
+              className="btn btn-primary btn-lg"
+              onClick={() => agregar(producto)}
+              disabled={agotado || !producto.activo || (enVenta && enVenta.cantidad >= producto.stock)}
+            >
+              {enVenta ? <Check size={16} /> : <Plus size={16} />}
+              {agotado ? 'Sin stock' : enVenta ? `En venta · ${enVenta.cantidad}` : 'Agregar a venta'}
+            </button>
+            {enVenta && (
+              <Link to="/ventas" className="btn btn-ghost btn-lg">
+                Ir a la venta
+              </Link>
+            )}
+            {isAdmin && (
+              <Link to={`/admin/productos?editar=${producto.id_producto}`} className="btn btn-ghost btn-lg">
+                <Pencil size={16} /> Editar
+              </Link>
+            )}
           </div>
-
-          <div className="flex gap-2 items-center" style={{ marginBottom: '0.75rem' }}>
-            <span className={`badge ${producto.stock <= producto.stock_minimo ? 'badge-warning' : 'badge-success'}`}>
-              Stock: {producto.stock}
-            </span>
-            <span className="text-sm text-muted">Mínimo: {producto.stock_minimo}</span>
-          </div>
-
-          {producto.fecha_vencimiento && (
-            <p className="text-sm text-muted">
-              Vence: {producto.fecha_vencimiento}
-            </p>
-          )}
-
-          <p className="text-sm mt-2">
-            Estado:{' '}
-            <span className={`badge ${producto.activo ? 'badge-success' : 'badge-danger'}`}>
-              {producto.activo ? 'Activo' : 'Inactivo'}
-            </span>
-          </p>
         </div>
       </div>
     </div>

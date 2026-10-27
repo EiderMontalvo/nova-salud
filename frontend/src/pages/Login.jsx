@@ -1,83 +1,148 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, LayoutGrid, ShoppingCart, TriangleAlert } from 'lucide-react';
+import '@fontsource/parisienne/latin-400.css';
 import { useAuth } from '../context/AuthContext';
+import Marca, { Corazon } from '../components/Marca';
+import Notice from '../components/Notice';
+import { mensajeError } from '../lib/errores';
 import './Login.css';
+
+const PUNTOS = [
+  { Icono: LayoutGrid, titulo: 'Catálogo al día', texto: 'precios, stock y fotos' },
+  { Icono: ShoppingCart, titulo: 'Ventas en mostrador', texto: 'en pocos clics' },
+  { Icono: TriangleAlert, titulo: 'Alertas de inventario', texto: 'stock bajo y vencimientos' },
+];
 
 export default function Login() {
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
+  const [verPassword, setVerPassword] = useState(false);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   const { login, usuario } = useAuth();
   const navigate = useNavigate();
 
-  if (usuario) {
-    navigate('/', { replace: true });
-    return null;
-  }
+  if (usuario) return <Navigate to="/" replace />;
 
-  const handleSubmit = async (e) => {
+  const ingresar = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
-
+    setEnviando(true);
     try {
       await login(correo, password);
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (err) {
-      setError(err?.message || 'Error al iniciar sesión. Verifica tus credenciales.');
+      setError(
+        err?.message === 'Credenciales inválidas'
+          ? 'Correo o contraseña incorrectos.'
+          : mensajeError(err, 'No se pudo iniciar sesión.')
+      );
     } finally {
-      setLoading(false);
+      setEnviando(false);
     }
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <div className="login-header">
-          <span className="login-icon">💊</span>
-          <h1>Nova Salud</h1>
-          <p>Inicia sesión para continuar</p>
+    <div className="login">
+      <section className="login-intro">
+        <div className="login-intro-marca">
+          <Marca grande claro />
+          <span className="login-lema">Tu salud, nuestra prioridad</span>
         </div>
 
-        {error && <div className="error-banner">{error}</div>}
+        <h1 className="login-titular">
+          Cuidamos de ti,
+          <br />
+          en cada etapa de <em>tu vida.</em>
+        </h1>
+        <p className="login-bajada">Catálogo, ventas e inventario de la botica, de forma rápida, segura y sencilla.</p>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="correo">Correo electrónico</label>
-            <input
-              id="correo"
-              type="email"
-              value={correo}
-              onChange={(e) => setCorreo(e.target.value)}
-              placeholder="usuario@novasalud.im-ra.com"
-              required
-              autoComplete="username"
-            />
-          </div>
+        <ul className="login-puntos">
+          {PUNTOS.map(({ Icono, titulo, texto }) => (
+            <li key={titulo}>
+              <span className="login-punto-icono">
+                <Icono size={20} />
+              </span>
+              <span>
+                <strong>{titulo}</strong>
+                <span>{texto}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
 
-          <div className="form-group">
-            <label htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-            />
-          </div>
-
-          <button type="submit" className="btn btn-primary login-btn" disabled={loading}>
-            {loading ? 'Ingresando...' : 'Ingresar'}
-          </button>
-        </form>
-
-        <p className="login-hint">
-          Usa las credenciales que te entregó el administrador.
+        <p className="login-firma">
+          Tu bienestar
+          <br />
+          comienza aquí
         </p>
-      </div>
+      </section>
+
+      <section className="login-lado">
+        <form className="login-card" onSubmit={ingresar}>
+          <div className="login-card-head">
+            <Corazon className="login-card-corazon" />
+            <h2>Nova Salud</h2>
+            <p>Inicia sesión para continuar</p>
+          </div>
+
+          <Notice>{error}</Notice>
+
+          <label className="field">
+            <span>Correo electrónico</span>
+            <span className="input-icono">
+              <Mail size={18} />
+              <input
+                className="input"
+                type="email"
+                value={correo}
+                onChange={(e) => setCorreo(e.target.value)}
+                placeholder="tu@correo.com"
+                autoComplete="username"
+                required
+                autoFocus
+              />
+            </span>
+          </label>
+
+          <label className="field">
+            <span>Contraseña</span>
+            <span className="input-icono">
+              <Lock size={18} />
+              <input
+                className="input"
+                type={verPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Ingresa tu contraseña"
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                className="input-ojo"
+                onClick={() => setVerPassword(!verPassword)}
+                aria-label={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {verPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </span>
+          </label>
+
+          <button type="submit" className="btn btn-primary btn-lg btn-block login-boton" disabled={enviando}>
+            {enviando && <span className="spinner" />}
+            {enviando ? 'Ingresando…' : 'Ingresar'}
+            {!enviando && <ArrowRight size={18} />}
+          </button>
+
+          <div className="login-separador login-seguro">
+            <span>
+              <Lock size={13} /> Tus datos están protegidos
+            </span>
+          </div>
+        </form>
+      </section>
     </div>
   );
 }

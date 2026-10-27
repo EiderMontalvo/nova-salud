@@ -1,146 +1,158 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api';
+import { Search, PackageSearch, Plus, RotateCw } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useCatalogo, filtrarProductos } from '../hooks/useCatalogo';
+import CategoryRow from '../components/CategoryRow';
+import ProductTile from '../components/ProductTile';
+import Notice from '../components/Notice';
 import './Catalogo.css';
 
-export default function Catalogo() {
-  const [categorias, setCategorias] = useState([]);
-  const [productos, setProductos] = useState([]);
-  const [pagination, setPagination] = useState(null);
-  const [categoriaId, setCategoriaId] = useState('');
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    api('/categorias?limit=100')
-      .then((res) => setCategorias(res.data || []))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    setLoading(true);
-    setError('');
-
-    const params = new URLSearchParams({ page, limit: 12 });
-    if (categoriaId) params.set('id_categoria', categoriaId);
-    if (search.trim()) params.set('search', search.trim());
-
-    api(`/productos?${params}`)
-      .then((res) => {
-        setProductos(res.data || []);
-        setPagination(res.pagination || null);
-      })
-      .catch((err) => setError(err?.message || 'Error al cargar productos'))
-      .finally(() => setLoading(false));
-  }, [categoriaId, search, page]);
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setPage(1);
-  };
-
+function EsqueletoMuro() {
   return (
-    <div>
-      <div className="page-header">
-        <h1>Catálogo</h1>
-      </div>
-
-      {/* Categorías */}
-      <div className="category-pills">
-        <button
-          className={`pill ${!categoriaId ? 'active' : ''}`}
-          onClick={() => {
-            setCategoriaId('');
-            setPage(1);
-          }}
-        >
-          Todas
-        </button>
-        {categorias.map((c) => (
-          <button
-            key={c.id_categoria}
-            className={`pill ${categoriaId == c.id_categoria ? 'active' : ''}`}
-            onClick={() => {
-              setCategoriaId(c.id_categoria);
-              setPage(1);
-            }}
-          >
-            {c.nombre}
-          </button>
-        ))}
-      </div>
-
-      {/* Búsqueda */}
-      <form className="filters" onSubmit={handleSearch}>
-        <input
-          type="search"
-          placeholder="Buscar producto..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <button type="submit" className="btn btn-primary btn-sm">
-          Buscar
-        </button>
-      </form>
-
-      {error && <div className="error-banner">{error}</div>}
-
-      {loading ? (
-        <div className="loading-screen" style={{ minHeight: 200 }}>
-          <div className="spinner" />
-        </div>
-      ) : productos.length === 0 ? (
-        <div className="empty-state">
-          <p>No se encontraron productos</p>
-        </div>
-      ) : (
-        <>
-          <div className="product-grid">
-            {productos.map((p) => (
-              <Link to={`/producto/${p.id_producto}`} key={p.id_producto} className="product-card">
-                <div className="product-img">
-                  <img
-                    src={p.imagen || '/sin-imagen.svg'}
-                    alt={p.nombre}
-                    loading="lazy"
-                    width="400"
-                    height="400"
-                    style={{ objectFit: 'cover', aspectRatio: '1 / 1' }}
-                  />
-                </div>
-                <div className="product-info">
-                  <span className="product-code">{p.codigo}</span>
-                  <h3>{p.nombre}</h3>
-                  <div className="product-footer">
-                    <span className="product-price">S/ {p.precio}</span>
-                    <span className={`badge ${p.stock <= p.stock_minimo ? 'badge-warning' : 'badge-success'}`}>
-                      Stock: {p.stock}
-                    </span>
-                  </div>
-                </div>
-              </Link>
+    <div className="wall" aria-busy="true" aria-label="Cargando catálogo">
+      {[0, 1].map((fila) => (
+        <div key={fila} className="row">
+          <div className="skeleton" style={{ width: 180, height: 24, marginBottom: 14 }} />
+          <div className="row-track">
+            {Array.from({ length: 7 }, (_, i) => (
+              <div key={i} className="skeleton tile-skeleton" />
             ))}
           </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-          {pagination && pagination.total_pages > 1 && (
-            <div className="pagination">
-              <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                ← Anterior
+export default function Catalogo() {
+  const { isAdmin } = useAuth();
+  const { productos, categorias, nombreCategoria, cargando, error, recargar } = useCatalogo();
+  const [busqueda, setBusqueda] = useState('');
+  const [categoriaId, setCategoriaId] = useState('');
+
+  const hileras = useMemo(
+    () =>
+      [...categorias]
+        .sort((a, b) => a.id_categoria - b.id_categoria)
+        .map((c) => ({
+          ...c,
+          productos: productos
+            .filter((p) => p.id_categoria === c.id_categoria)
+            .sort((a, b) => a.codigo.localeCompare(b.codigo)),
+        }))
+        .filter((c) => c.productos.length > 0),
+    [categorias, productos]
+  );
+
+  const idCategoria = Number(categoriaId) || null;
+  const enReticula = Boolean(busqueda.trim() || idCategoria);
+  const resultados = useMemo(() => {
+    const base = idCategoria ? productos.filter((p) => p.id_categoria === idCategoria) : productos;
+    return filtrarProductos(base, busqueda);
+  }, [productos, idCategoria, busqueda]);
+
+  const titulo = idCategoria ? nombreCategoria[idCategoria] : 'Resultados';
+
+  return (
+    <div className="catalogo">
+      <div className="catalogo-head">
+        <div className="search search-lg">
+          <Search size={20} />
+          <input
+            className="input"
+            type="search"
+            placeholder="Buscar nombre o código (MED001)"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            aria-label="Buscar producto"
+            autoFocus
+          />
+        </div>
+        <select
+          className="select catalogo-categoria"
+          value={categoriaId}
+          onChange={(e) => setCategoriaId(e.target.value)}
+          aria-label="Categoría"
+        >
+          <option value="">Todas las categorías ({productos.length})</option>
+          {hileras.map((c) => (
+            <option key={c.id_categoria} value={c.id_categoria}>
+              {c.nombre} ({c.productos.length})
+            </option>
+          ))}
+        </select>
+        {isAdmin && (
+          <Link to="/admin/productos?nuevo=1" className="btn btn-primary btn-lg catalogo-nuevo">
+            <Plus size={16} /> Nuevo producto
+          </Link>
+        )}
+      </div>
+
+      {error && (
+        <div className="stack" style={{ marginBottom: '1.5rem' }}>
+          <Notice>{error}</Notice>
+          <div>
+            <button type="button" className="btn btn-ghost" onClick={recargar}>
+              <RotateCw size={14} /> Reintentar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {cargando ? (
+        <EsqueletoMuro />
+      ) : enReticula ? (
+        <section aria-label={titulo}>
+          <header className="row-head">
+            <h2 className="row-title">{titulo}</h2>
+            <span className="muted small num">
+              {resultados.length} {resultados.length === 1 ? 'producto' : 'productos'}
+            </span>
+            {idCategoria && (
+              <button type="button" className="link-btn" onClick={() => setCategoriaId('')}>
+                Ver todas
               </button>
-              <span className="text-sm text-muted">
-                Página {pagination.page} de {pagination.total_pages}
-              </span>
-              <button
-                disabled={page >= pagination.total_pages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Siguiente →
+            )}
+          </header>
+          {resultados.length === 0 ? (
+            <div className="empty">
+              <PackageSearch size={32} />
+              <strong>No hay productos que coincidan con «{busqueda.trim()}»</strong>
+              <span className="small">Prueba con otra parte del nombre o con el código (MED…).</span>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBusqueda('')}>
+                Limpiar búsqueda
               </button>
             </div>
+          ) : (
+            <div className="grid">
+              {resultados.map((p) => (
+                <ProductTile key={p.id_producto} producto={p} categoria={nombreCategoria[p.id_categoria]} expandible={false} />
+              ))}
+            </div>
           )}
-        </>
+        </section>
+      ) : hileras.length === 0 && !error ? (
+        <div className="empty">
+          <PackageSearch size={32} />
+          <strong>Aún no hay productos activos</strong>
+          {isAdmin && (
+            <Link to="/admin/productos?nuevo=1" className="btn btn-primary btn-sm">
+              <Plus size={14} /> Crear el primero
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="wall">
+          {hileras.map((c) => (
+            <CategoryRow
+              key={c.id_categoria}
+              titulo={c.nombre}
+              productos={c.productos}
+              onVerTodo={() => setCategoriaId(String(c.id_categoria))}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

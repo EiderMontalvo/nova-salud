@@ -1,143 +1,499 @@
-import { useState, useEffect } from 'react';
-import { api } from '../api';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Search,
+  Plus,
+  Minus,
+  Trash2,
+  ShoppingCart,
+  PackageSearch,
+  Banknote,
+  Smartphone,
+  CreditCard,
+  Printer,
+} from 'lucide-react';
+import { api, traerTodos } from '../api';
+import { useAuth } from '../context/AuthContext';
+import { useVenta } from '../context/VentaContext';
+import { useCatalogo, filtrarProductos } from '../hooks/useCatalogo';
+import Notice from '../components/Notice';
+import Marca from '../components/Marca';
+import { SIN_IMAGEN } from '../components/ProductTile';
+import { mensajeError } from '../lib/errores';
+import { soles, stockBajo } from '../lib/formato';
+import './Ventas.css';
 
-export default function Ventas() {
-  const [clientes, setClientes] = useState([]);
-  const [productos, setProductos] = useState([]);
-  const [idCliente, setIdCliente] = useState('');
-  const [metodoPago, setMetodoPago] = useState('EFECTIVO');
-  const [detalles, setDetalles] = useState([{ id_producto: '', cantidad: 1 }]);
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState({ type: '', text: '' });
+const METODOS = [
+  { valor: 'EFECTIVO', texto: 'Efectivo', Icono: Banknote },
+  { valor: 'YAPE', texto: 'Yape', Icono: Smartphone },
+  { valor: 'PLIN', texto: 'Plin', Icono: Smartphone },
+  { valor: 'TARJETA', texto: 'Tarjeta', Icono: CreditCard },
+];
 
+const BILLETES = [10, 20, 50, 100, 200];
+
+const fechaHora = (valor) =>
+  new Date(valor).toLocaleString('es-PE', {
+    timeZone: 'America/Lima',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+function Reloj() {
+  const [ahora, setAhora] = useState(() => new Date());
   useEffect(() => {
-    api('/clientes?limit=100').then((res) => setClientes(res.data || [])).catch(() => {});
-    api('/productos?limit=100').then((res) => setProductos(res.data || [])).catch(() => {});
+    const id = setInterval(() => setAhora(new Date()), 30000);
+    return () => clearInterval(id);
   }, []);
+  return <span className="num">{fechaHora(ahora)}</span>;
+}
 
-  const addLinea = () => {
-    setDetalles([...detalles, { id_producto: '', cantidad: 1 }]);
-  };
+function Selector({ productos, categorias, items, onAgregar }) {
+  const [busqueda, setBusqueda] = useState('');
+  const [categoriaId, setCategoriaId] = useState('');
 
-  const updateLinea = (idx, field, value) => {
-    const next = [...detalles];
-    next[idx] = { ...next[idx], [field]: value };
-    setDetalles(next);
-  };
+  const lista = useMemo(() => {
+    const base = categoriaId ? productos.filter((p) => p.id_categoria === Number(categoriaId)) : productos;
+    return [...filtrarProductos(base, busqueda)].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [productos, categoriaId, busqueda]);
 
-  const removeLinea = (idx) => {
-    if (detalles.length === 1) return;
-    setDetalles(detalles.filter((_, i) => i !== idx));
-  };
-
-  const handleSubmit = async (e) => {
+  const agregarPrimero = (e) => {
+    if (e.key !== 'Enter' || !busqueda.trim()) return;
     e.preventDefault();
-    setMsg({ type: '', text: '' });
-    setLoading(true);
-
-    try {
-      const body = {
-        id_cliente: Number(idCliente),
-        metodo_pago: metodoPago,
-        detalles: detalles
-          .filter((d) => d.id_producto)
-          .map((d) => ({
-            id_producto: Number(d.id_producto),
-            cantidad: Number(d.cantidad),
-          })),
-      };
-
-      if (!body.id_cliente || body.detalles.length === 0) {
-        setMsg({ type: 'error', text: 'Selecciona cliente y al menos un producto' });
-        return;
-      }
-
-      await api('/ventas', { method: 'POST', body });
-      setMsg({ type: 'success', text: 'Venta registrada correctamente' });
-      setDetalles([{ id_producto: '', cantidad: 1 }]);
-      setIdCliente('');
-    } catch (err) {
-      setMsg({ type: 'error', text: err?.message || 'Error al registrar la venta' });
-    } finally {
-      setLoading(false);
+    const primero = lista.find((p) => p.stock > 0);
+    if (primero) {
+      onAgregar(primero);
+      setBusqueda('');
     }
   };
 
   return (
-    <div>
-      <div className="page-header">
-        <h1>Registrar venta</h1>
+    <section className="pos-productos" aria-label="Productos">
+      <div className="pos-filtros">
+        <div className="search search-lg">
+          <Search size={20} />
+          <input
+            className="input"
+            type="search"
+            placeholder="Buscar producto o código"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            onKeyDown={agregarPrimero}
+            aria-label="Buscar producto"
+            autoFocus
+          />
+        </div>
+        <select
+          className="select"
+          value={categoriaId}
+          onChange={(e) => setCategoriaId(e.target.value)}
+          aria-label="Categoría"
+        >
+          <option value="">Todas las categorías</option>
+          {categorias.map((c) => (
+            <option key={c.id_categoria} value={c.id_categoria}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {msg.text && (
-        <div className={msg.type === 'error' ? 'error-banner' : 'success-banner'}>{msg.text}</div>
+      {lista.length === 0 ? (
+        <div className="empty">
+          <PackageSearch size={28} />
+          <span>Sin coincidencias para «{busqueda}»</span>
+        </div>
+      ) : (
+        <ul className="pos-grid">
+          {lista.map((p) => {
+            const enVenta = items.find((i) => i.id_producto === p.id_producto);
+            const sinStock = p.stock === 0 || (enVenta && enVenta.cantidad >= p.stock);
+            return (
+              <li key={p.id_producto}>
+                <button
+                  type="button"
+                  className={enVenta ? 'pos-card is-in' : 'pos-card'}
+                  onClick={() => onAgregar(p)}
+                  disabled={sinStock}
+                  aria-label={`Agregar ${p.nombre}, ${soles(p.precio)}`}
+                >
+                  <span className="pos-card-foto">
+                    <img src={p.imagen || SIN_IMAGEN} alt="" loading="lazy" />
+                    {enVenta && <span className="pos-card-cant num">{enVenta.cantidad}</span>}
+                  </span>
+                  <span className="pos-card-nombre">{p.nombre}</span>
+                  <span className="pos-card-pie">
+                    <span className="price">{soles(p.precio)}</span>
+                    <span className={stockBajo(p) ? 'small texto-danger num' : 'small muted num'}>
+                      {p.stock === 0 ? 'Agotado' : `${p.stock} u.`}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
+    </section>
+  );
+}
 
-      <form onSubmit={handleSubmit} className="card" style={{ padding: '1.5rem', maxWidth: 640 }}>
-        <div className="form-group">
-          <label>Cliente</label>
-          <select value={idCliente} onChange={(e) => setIdCliente(e.target.value)} required>
-            <option value="">Seleccionar cliente...</option>
-            {clientes.map((c) => (
-              <option key={c.id_cliente} value={c.id_cliente}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
+function Comprobante({ venta, cobro, vendedor, cliente, onNueva }) {
+  const metodo = METODOS.find((m) => m.valor === venta.metodo_pago)?.texto;
+  return (
+    <div className="ticket ticket-papel" id="comprobante">
+      <div className="ticket-cabecera">
+        <Marca />
+        <span className="small muted">Ticket de venta · uso interno</span>
+      </div>
+      <dl className="ticket-meta">
+        <div>
+          <dt>Venta</dt>
+          <dd className="num">Nº {String(venta.id_venta).padStart(6, '0')}</dd>
         </div>
-
-        <div className="form-group">
-          <label>Método de pago</label>
-          <select value={metodoPago} onChange={(e) => setMetodoPago(e.target.value)}>
-            <option value="EFECTIVO">Efectivo</option>
-            <option value="TARJETA">Tarjeta</option>
-            <option value="YAPE">Yape</option>
-            <option value="PLIN">Plin</option>
-            <option value="TRANSFERENCIA">Transferencia</option>
-          </select>
+        <div>
+          <dt>Fecha</dt>
+          <dd className="num">{fechaHora(venta.fecha)}</dd>
         </div>
-
-        <label style={{ fontWeight: 500, fontSize: '0.85rem', marginBottom: '0.5rem', display: 'block' }}>
-          Productos
-        </label>
-
-        {detalles.map((d, idx) => (
-          <div key={idx} className="flex gap-1 items-center" style={{ marginBottom: '0.75rem' }}>
-            <select
-              value={d.id_producto}
-              onChange={(e) => updateLinea(idx, 'id_producto', e.target.value)}
-              style={{ flex: 1, padding: '0.55rem', borderRadius: 8, border: '1.5px solid var(--border)' }}
-              required
-            >
-              <option value="">Producto...</option>
-              {productos.map((p) => (
-                <option key={p.id_producto} value={p.id_producto}>
-                  {p.nombre} — S/ {p.precio} (stock: {p.stock})
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              min="1"
-              value={d.cantidad}
-              onChange={(e) => updateLinea(idx, 'cantidad', e.target.value)}
-              style={{ width: 80, padding: '0.55rem', borderRadius: 8, border: '1.5px solid var(--border)' }}
-              required
-            />
-            <button type="button" className="btn btn-outline btn-sm" onClick={() => removeLinea(idx)}>
-              ✕
-            </button>
-          </div>
+        <div>
+          <dt>Atendió</dt>
+          <dd>{vendedor}</dd>
+        </div>
+        <div>
+          <dt>Cliente</dt>
+          <dd>{cliente || 'Venta al paso'}</dd>
+        </div>
+      </dl>
+      <ul className="ticket-lineas">
+        {venta.detalles.map((d) => (
+          <li key={d.id_detalle}>
+            <span>{d.nombre}</span>
+            <span className="num muted">
+              {d.cantidad} × {soles(d.precio_unitario)}
+            </span>
+            <span className="num">{soles(d.subtotal)}</span>
+          </li>
         ))}
+      </ul>
+      <div className="ticket-total">
+        <span>Total</span>
+        <span className="price num">{soles(venta.total)}</span>
+      </div>
+      <dl className="ticket-meta">
+        <div>
+          <dt>Pago</dt>
+          <dd>{metodo}</dd>
+        </div>
+        {cobro.recibido !== null && (
+          <>
+            <div>
+              <dt>Recibido</dt>
+              <dd className="num">{soles(cobro.recibido)}</dd>
+            </div>
+            <div>
+              <dt>Vuelto</dt>
+              <dd className="num">{soles(cobro.recibido - Number(venta.total))}</dd>
+            </div>
+          </>
+        )}
+      </dl>
+      <p className="ticket-gracias">Gracias por su compra</p>
 
-        <button type="button" className="btn btn-outline btn-sm" onClick={addLinea} style={{ marginBottom: '1.25rem' }}>
-          + Agregar producto
-        </button>
+      <div className="ticket-acciones no-print">
+        <Notice tipo="success">Venta registrada. El stock ya se descontó.</Notice>
+        {venta.alertas_stock?.length > 0 && (
+          <Notice tipo="warn">
+            Quedan pocas unidades de {venta.alertas_stock.map((a) => `${a.nombre} (${a.stock})`).join(', ')}.{' '}
+            <Link to="/stock-bajo">Ver alertas</Link>
+          </Notice>
+        )}
+        <div className="ticket-botones">
+          <button type="button" className="btn btn-ghost btn-lg" onClick={() => window.print()}>
+            <Printer size={16} /> Imprimir
+          </button>
+          <button type="button" className="btn btn-primary btn-lg" onClick={onNueva} autoFocus>
+            Nueva venta
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-        <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
-          {loading ? 'Registrando...' : 'Registrar venta'}
-        </button>
-      </form>
+export default function Ventas() {
+  const { usuario } = useAuth();
+  const { productos, categorias, cargando, error: errorCatalogo, recargar } = useCatalogo();
+  const { items, agregar, cambiarCantidad, quitar, vaciar, total, unidades } = useVenta();
+  const [clientes, setClientes] = useState([]);
+  const [idCliente, setIdCliente] = useState('');
+  const [metodoPago, setMetodoPago] = useState('EFECTIVO');
+  const [recibido, setRecibido] = useState('');
+  const [pagoConfirmado, setPagoConfirmado] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState('');
+  const [resultado, setResultado] = useState(null);
+
+  useEffect(() => {
+    traerTodos('/clientes')
+      .then(setClientes)
+      .catch(() => setClientes([]));
+  }, []);
+
+  const efectivo = metodoPago === 'EFECTIVO';
+  const montoRecibido = recibido === '' ? null : Number(String(recibido).replace(',', '.'));
+  const totalRedondeado = Math.round(total * 100) / 100;
+  const vuelto = montoRecibido === null ? null : montoRecibido - totalRedondeado;
+  const pagoListo = efectivo ? vuelto !== null && vuelto >= 0 : pagoConfirmado;
+  const puedeCobrar = items.length > 0 && pagoListo && !enviando;
+
+  const elegirMetodo = (valor) => {
+    setMetodoPago(valor);
+    setPagoConfirmado(false);
+  };
+
+  const cobrar = async () => {
+    setError('');
+    setEnviando(true);
+    try {
+      const res = await api('/ventas', {
+        method: 'POST',
+        body: {
+          id_cliente: idCliente ? Number(idCliente) : null,
+          metodo_pago: metodoPago,
+          detalles: items.map((i) => ({ id_producto: i.id_producto, cantidad: i.cantidad })),
+        },
+      });
+      setResultado({
+        venta: res.data,
+        cobro: { recibido: efectivo ? montoRecibido : null },
+        cliente: clientes.find((c) => c.id_cliente === Number(idCliente))?.nombre,
+      });
+      vaciar();
+      recargar();
+    } catch (err) {
+      setError(mensajeError(err, 'No se pudo registrar la venta.'));
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  const nuevaVenta = () => {
+    setResultado(null);
+    setIdCliente('');
+    setMetodoPago('EFECTIVO');
+    setRecibido('');
+    setPagoConfirmado(false);
+  };
+
+  return (
+    <div className="pos">
+      <div className="page-head no-print">
+        <div>
+          <h1 className="page-title">Nueva venta</h1>
+          <p className="muted">
+            Atiende {usuario?.nombre} · <Reloj />
+          </p>
+        </div>
+      </div>
+
+      <div className="pos-cuerpo">
+        <div className="no-print">
+          {cargando ? (
+            <div className="skeleton" style={{ minHeight: 480 }} />
+          ) : errorCatalogo ? (
+            <Notice>{errorCatalogo}</Notice>
+          ) : (
+            <Selector productos={productos} categorias={categorias} items={items} onAgregar={agregar} />
+          )}
+        </div>
+
+        <aside className="pos-ticket" id="ticket" aria-label="Ticket">
+          {resultado ? (
+            <Comprobante
+              venta={resultado.venta}
+              cobro={resultado.cobro}
+              cliente={resultado.cliente}
+              vendedor={usuario?.nombre}
+              onNueva={nuevaVenta}
+            />
+          ) : (
+            <div className="ticket">
+              <div className="ticket-head">
+                <ShoppingCart size={18} />
+                <h2 className="row-title">Ticket</h2>
+                <span className="muted small num">
+                  {unidades} {unidades === 1 ? 'unidad' : 'unidades'}
+                </span>
+                {items.length > 0 && (
+                  <button type="button" className="link-btn ticket-vaciar" onClick={vaciar}>
+                    Vaciar
+                  </button>
+                )}
+              </div>
+
+              {items.length === 0 ? (
+                <div className="ticket-vacio">
+                  <ShoppingCart size={28} />
+                  <span>Elige productos de la izquierda. También puedes agregarlos desde el catálogo.</span>
+                </div>
+              ) : (
+                <ul className="ticket-items">
+                  {items.map((i) => (
+                    <li key={i.id_producto}>
+                      <img src={i.imagen || SIN_IMAGEN} alt="" />
+                      <div className="ticket-item-texto">
+                        <span className="cell-name">{i.nombre}</span>
+                        <span className="cell-code num">{soles(i.precio)} c/u</span>
+                      </div>
+                      <span className="ticket-subtotal num">{soles(i.precio * i.cantidad)}</span>
+                      <div className="stepper">
+                        <button
+                          type="button"
+                          onClick={() => cambiarCantidad(i.id_producto, i.cantidad - 1)}
+                          disabled={i.cantidad <= 1}
+                          aria-label={`Quitar una unidad de ${i.nombre}`}
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <input
+                          className="num"
+                          type="number"
+                          min="1"
+                          max={i.stock}
+                          value={i.cantidad}
+                          onChange={(e) => cambiarCantidad(i.id_producto, Number(e.target.value) || 1)}
+                          aria-label={`Cantidad de ${i.nombre}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => cambiarCantidad(i.id_producto, i.cantidad + 1)}
+                          disabled={i.cantidad >= i.stock}
+                          aria-label={`Sumar una unidad de ${i.nombre}`}
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className="ticket-quitar"
+                        onClick={() => quitar(i.id_producto)}
+                        aria-label={`Quitar ${i.nombre}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="ticket-total">
+                <span>Total a cobrar</span>
+                <span className="price num">{soles(totalRedondeado)}</span>
+              </div>
+
+              <label className="field">
+                <span>Cliente</span>
+                <select className="select" value={idCliente} onChange={(e) => setIdCliente(e.target.value)}>
+                  <option value="">Venta al paso (sin cliente)</option>
+                  {clientes.map((c) => (
+                    <option key={c.id_cliente} value={c.id_cliente}>
+                      {c.nombre}
+                      {c.documento ? ` · ${c.documento}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="field">
+                <span>Forma de pago</span>
+                <div className="metodos" role="group" aria-label="Forma de pago">
+                  {METODOS.map(({ valor, texto, Icono }) => (
+                    <button
+                      key={valor}
+                      type="button"
+                      aria-pressed={metodoPago === valor}
+                      onClick={() => elegirMetodo(valor)}
+                    >
+                      <Icono size={18} />
+                      {texto}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {efectivo ? (
+                <div className="cobro">
+                  <label className="field">
+                    <span>Monto recibido (S/)</span>
+                    <input
+                      className="input input-monto num"
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      value={recibido}
+                      onChange={(e) => setRecibido(e.target.value)}
+                      disabled={items.length === 0}
+                    />
+                  </label>
+                  <div className="billetes">
+                    <button
+                      type="button"
+                      onClick={() => setRecibido(totalRedondeado.toFixed(2))}
+                      disabled={items.length === 0}
+                    >
+                      Exacto
+                    </button>
+                    {BILLETES.map((b) => (
+                      <button
+                        key={b}
+                        type="button"
+                        onClick={() => setRecibido(String(b))}
+                        disabled={items.length === 0 || b < totalRedondeado}
+                      >
+                        S/ {b}
+                      </button>
+                    ))}
+                  </div>
+                  <div className={vuelto !== null && vuelto < 0 ? 'vuelto is-falta' : 'vuelto'}>
+                    <span>{vuelto !== null && vuelto < 0 ? 'Falta' : 'Vuelto'}</span>
+                    <span className="price num">{vuelto === null ? '—' : soles(Math.abs(vuelto))}</span>
+                  </div>
+                </div>
+              ) : (
+                <label className="check confirmar-pago">
+                  <input
+                    type="checkbox"
+                    checked={pagoConfirmado}
+                    onChange={(e) => setPagoConfirmado(e.target.checked)}
+                    disabled={items.length === 0}
+                  />
+                  {metodoPago === 'TARJETA'
+                    ? 'El POS aprobó el pago con tarjeta'
+                    : `Verifiqué el pago de ${soles(totalRedondeado)} en ${metodoPago === 'YAPE' ? 'Yape' : 'Plin'}`}
+                </label>
+              )}
+
+              <Notice>{error}</Notice>
+
+              <button type="button" className="btn btn-primary btn-lg btn-block" onClick={cobrar} disabled={!puedeCobrar}>
+                {enviando && <span className="spinner" />}
+                {enviando ? 'Registrando…' : `Cobrar ${soles(totalRedondeado)}`}
+              </button>
+            </div>
+          )}
+        </aside>
+      </div>
+
+      {!resultado && items.length > 0 && (
+        <a href="#ticket" className="pos-barra no-print">
+          <span>
+            <ShoppingCart size={16} /> {unidades} {unidades === 1 ? 'unidad' : 'unidades'}
+          </span>
+          <span className="price num">Cobrar {soles(totalRedondeado)}</span>
+        </a>
+      )}
     </div>
   );
 }

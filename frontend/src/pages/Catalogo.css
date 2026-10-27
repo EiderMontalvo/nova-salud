@@ -1,89 +1,337 @@
-.category-pills {
+.catalogo-head {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
 }
 
-.pill {
-  padding: 0.4rem 1rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  background: white;
-  border: 1.5px solid var(--border);
-  color: var(--text-muted);
-  transition: all 0.15s;
+.catalogo-head .search {
+  flex: 1;
 }
 
-.pill:hover {
-  border-color: var(--primary);
+.catalogo-head .catalogo-categoria {
+  width: 260px;
+  height: 52px;
+  border-color: var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+.catalogo-head .catalogo-nuevo {
+  height: 52px;
+}
+
+/* Muro: hileras por categoría */
+
+.wall {
+  display: flex;
+  flex-direction: column;
+  gap: 2.25rem;
+}
+
+.row {
+  position: relative;
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+/* La hilera activa sube y queda al frente; el resto se atenúa. */
+@media (hover: hover) {
+  .wall:has(.tile-expand:hover, .tile-expand:focus-within) .row:not(:has(.tile-expand:hover, .tile-expand:focus-within)) {
+    opacity: 0.5;
+  }
+
+  .row:has(.tile-expand:hover, .tile-expand:focus-within) {
+    z-index: 1;
+    transform: translateY(-4px);
+  }
+}
+
+.row-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.row-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
   color: var(--primary);
 }
 
-.pill.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: white;
+.row-all:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.product-card {
-  background: white;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  overflow: hidden;
-  transition: box-shadow 0.2s, transform 0.2s;
+.row-arrows {
   display: flex;
-  flex-direction: column;
+  gap: 0.5rem;
+  margin-left: auto;
+  align-self: center;
 }
 
-.product-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+.row-track {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 2px;
+  padding: 10px 2px 1rem;
+  margin: -10px -2px 0;
+  scrollbar-width: none;
 }
 
-.product-img {
-  background: #f1f5f9;
-  aspect-ratio: 1 / 1;
+.row-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tile */
+
+.tile {
+  --tile: 188px;
+  flex: none;
+  display: flex;
+  scroll-snap-align: start;
+  border-radius: var(--radius);
+  transition: box-shadow 0.2s var(--ease), background 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.tile-main {
+  width: var(--tile);
+  flex: none;
+}
+
+.tile-photo {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  border-radius: var(--radius);
   overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line);
+  transition: border-radius 0.2s var(--ease);
 }
 
-.product-img img {
+.tile-photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s var(--ease);
 }
 
-.product-info {
-  padding: 1rem;
+.tile-caption {
+  padding: 0.625rem 0.25rem 0;
+}
+
+.tile-caption h3 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tile-linea {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.125rem;
+}
+
+.tile-price {
+  font-size: 1.125rem;
+}
+
+.tile-alerta {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--danger);
+  white-space: nowrap;
+}
+
+/* Detalle: oculto en hilera hasta el foco, visible en retícula */
+
+.tile-detail {
+  overflow: hidden;
+}
+
+.tile-detail-inner {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  gap: 0.625rem;
+  padding: 0.875rem;
 }
 
-.product-code {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 500;
+.tile-facts {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
 }
 
-.product-info h3 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin: 0.25rem 0 0.75rem;
-  line-height: 1.3;
-  flex: 1;
-}
-
-.product-footer {
+.tile-facts div {
   display: flex;
-  align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
 }
 
-.product-price {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--primary-dark);
+.tile-facts dt {
+  color: var(--text-3);
+}
+
+.tile-detail-nombre {
+  display: none;
+}
+
+.tile-expand .tile-detail {
+  width: 0;
+  opacity: 0;
+  transition: width 0.22s var(--ease), opacity 0.18s;
+}
+
+.tile-expand .tile-detail-inner {
+  width: 228px;
+  height: var(--tile);
+}
+
+.tile-expand .tile-detail-nombre {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--deep);
+}
+
+.tile-expand .tile-detail-inner .btn {
+  margin-top: auto;
+}
+
+/* La tile enfocada es una sola unidad elevada: foto + detalle sobre blanco, con marco verde azulado. */
+.tile-expand:hover,
+.tile-expand:focus-within {
+  background: var(--surface);
+  box-shadow: var(--shadow-lift), 0 0 0 1.5px var(--primary);
+  transform: translateY(-6px);
+}
+
+.tile-expand:hover .tile-photo,
+.tile-expand:focus-within .tile-photo {
+  box-shadow: none;
+  border-radius: var(--radius) 0 0 0;
+}
+
+.tile-expand:hover .tile-photo img,
+.tile-expand:focus-within .tile-photo img {
+  transform: scale(1.03);
+}
+
+.tile-expand:hover .tile-caption,
+.tile-expand:focus-within .tile-caption {
+  padding: 0.625rem 0.75rem 0.75rem;
+}
+
+.tile-expand:hover .tile-detail,
+.tile-expand:focus-within .tile-detail {
+  width: 228px;
+  opacity: 1;
+}
+
+/* En pantallas táctiles no hay hover: el detalle se ve siempre debajo. */
+@media (hover: none) {
+  .tile-expand {
+    flex-direction: column;
+    width: var(--tile);
+  }
+
+  .tile-expand .tile-detail {
+    width: auto;
+    opacity: 1;
+  }
+
+  .tile-expand .tile-detail-nombre {
+    display: none;
+  }
+
+  .tile-expand .tile-alerta {
+    display: none;
+  }
+
+  .tile-expand .tile-detail-inner {
+    width: auto;
+    height: auto;
+    padding: 0.5rem 0.25rem 0;
+  }
+}
+
+.tile-skeleton {
+  flex: none;
+  width: 188px;
+  aspect-ratio: 1;
+}
+
+/* Retícula de resultados */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+  gap: 1.5rem 1rem;
+}
+
+.grid .tile {
+  flex-direction: column;
+}
+
+.grid .tile-main {
+  width: auto;
+}
+
+.grid .tile-detail-inner {
+  padding: 0.5rem 0.25rem 0;
+  gap: 0.5rem;
+}
+
+.grid .tile:hover .tile-photo {
+  box-shadow: var(--shadow-sm), inset 0 0 0 1.5px var(--primary);
+}
+
+@media (max-width: 900px) {
+  .catalogo-head {
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .catalogo-head .search {
+    flex-basis: 100%;
+  }
+
+  .catalogo-head .catalogo-categoria {
+    width: 100%;
+    height: 46px;
+  }
+
+  .catalogo-head .catalogo-nuevo {
+    display: none;
+  }
+
+  .row-arrows {
+    display: none;
+  }
+
+  .tile {
+    --tile: 152px;
+  }
+
+  .tile-skeleton {
+    width: 152px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

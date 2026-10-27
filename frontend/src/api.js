@@ -13,7 +13,8 @@ export async function api(ruta, { method = 'GET', body } = {}) {
     body: body instanceof FormData ? body : body && JSON.stringify(body),
   });
 
-  if (respuesta.status === 401) {
+  // Sin token el 401 viene del login (credenciales inválidas) y debe mostrarse como error.
+  if (respuesta.status === 401 && token) {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('usuario');
     window.location.href = '/login';
@@ -27,4 +28,52 @@ export async function api(ruta, { method = 'GET', body } = {}) {
   if (!json.success) throw json;
 
   return json;
+}
+
+// La API limita cada página a 100 registros; esto recorre todas.
+export async function traerTodos(ruta) {
+  const separador = ruta.includes('?') ? '&' : '?';
+  const primera = await api(`${ruta}${separador}limit=100&page=1`);
+  const datos = [...(primera.data || [])];
+  const paginas = primera.pagination?.total_pages || 1;
+
+  for (let pagina = 2; pagina <= paginas; pagina++) {
+    const res = await api(`${ruta}${separador}limit=100&page=${pagina}`);
+    datos.push(...(res.data || []));
+  }
+
+  return datos;
+}
+
+// Un PUT reemplaza todos los campos, así que se arma desde el producto completo.
+export function cuerpoProducto(producto, cambios = {}) {
+  const p = { ...producto, ...cambios };
+  return {
+    id_categoria: Number(p.id_categoria),
+    codigo: p.codigo,
+    nombre: p.nombre,
+    descripcion: p.descripcion || null,
+    imagen: p.imagen || null,
+    precio: String(p.precio),
+    stock: Number(p.stock),
+    stock_minimo: Number(p.stock_minimo),
+    fecha_vencimiento: p.fecha_vencimiento || null,
+    ...(p.activo !== undefined && { activo: Boolean(p.activo) }),
+  };
+}
+
+export function cuerpoCategoria(categoria, cambios = {}) {
+  const c = { ...categoria, ...cambios };
+  return {
+    nombre: c.nombre,
+    descripcion: c.descripcion || null,
+    imagen: c.imagen || null,
+    ...(c.activo !== undefined && { activo: Boolean(c.activo) }),
+  };
+}
+
+export async function subirImagen(tipo, id, archivo) {
+  const fd = new FormData();
+  fd.append('imagen', archivo);
+  return api(`/${tipo}/${id}/imagen`, { method: 'POST', body: fd });
 }

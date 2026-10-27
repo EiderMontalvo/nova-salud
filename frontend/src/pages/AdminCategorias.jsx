@@ -1,182 +1,158 @@
-import { useState, useEffect } from 'react';
-import { api } from '../api';
-
-const emptyForm = { nombre: '', descripcion: '', imagen: null };
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Plus, Pencil, EyeOff, RotateCcw, Tags } from 'lucide-react';
+import { api, cuerpoCategoria, traerTodos } from '../api';
+import CategoriaForm from '../components/CategoriaForm';
+import Notice from '../components/Notice';
+import { SIN_IMAGEN } from '../components/ProductTile';
+import { mensajeError } from '../lib/errores';
+import './AdminCategorias.css';
 
 export default function AdminCategorias() {
   const [categorias, setCategorias] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(null);
-  const [form, setForm] = useState(emptyForm);
-  const [archivo, setArchivo] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState({ type: '', text: '' });
+  const [productos, setProductos] = useState([]);
+  const [activas, setActivas] = useState(true);
+  const [cargando, setCargando] = useState(true);
+  const [aviso, setAviso] = useState(null);
+  // undefined: cerrado; null: crear; objeto: editar.
+  const [editando, setEditando] = useState(undefined);
 
-  const load = () => {
-    setLoading(true);
-    api('/categorias?limit=100')
-      .then((res) => setCategorias(res.data || []))
-      .catch((err) => setMsg({ type: 'error', text: err?.message || 'Error' }))
-      .finally(() => setLoading(false));
-  };
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    try {
+      setCategorias(await traerTodos(`/categorias?activo=${activas}`));
+    } catch (err) {
+      setAviso({ tipo: 'error', texto: mensajeError(err, 'No se pudieron cargar las categorías.') });
+    } finally {
+      setCargando(false);
+    }
+  }, [activas]);
 
   useEffect(() => {
-    load();
+    cargar();
+  }, [cargar]);
+
+  useEffect(() => {
+    traerTodos('/productos')
+      .then(setProductos)
+      .catch(() => setProductos([]));
   }, []);
 
-  const openCreate = () => {
-    setForm(emptyForm);
-    setArchivo(null);
-    setModal('create');
-    setMsg({ type: '', text: '' });
+  const conteo = useMemo(() => {
+    const mapa = {};
+    for (const p of productos) mapa[p.id_categoria] = (mapa[p.id_categoria] || 0) + 1;
+    return mapa;
+  }, [productos]);
+
+  const alGuardar = (categoria, accion) => {
+    setEditando(undefined);
+    setAviso({ tipo: 'success', texto: `Categoría «${categoria.nombre}» ${accion}.` });
+    cargar();
   };
 
-  const openEdit = (c) => {
-    setForm({
-      nombre: c.nombre || '',
-      descripcion: c.descripcion || '',
-      imagen: c.imagen,
-      activo: c.activo,
-    });
-    setArchivo(null);
-    setModal(c);
-    setMsg({ type: '', text: '' });
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setMsg({ type: '', text: '' });
-
+  const cambiarEstado = async (categoria, activa) => {
+    setAviso(null);
     try {
-      const body = {
-        nombre: form.nombre,
-        descripcion: form.descripcion || null,
-        imagen: null,
-      };
-
-      let categoria;
-      if (modal === 'create') {
-        const res = await api('/categorias', { method: 'POST', body });
-        categoria = res.data;
+      if (activa) {
+        await api(`/categorias/${categoria.id_categoria}`, {
+          method: 'PUT',
+          body: cuerpoCategoria(categoria, { activo: true }),
+        });
       } else {
-        body.activo = form.activo;
-        const res = await api(`/categorias/${modal.id_categoria}`, { method: 'PUT', body });
-        categoria = res.data;
+        await api(`/categorias/${categoria.id_categoria}`, { method: 'DELETE' });
       }
-
-      if (archivo && categoria?.id_categoria) {
-        const fd = new FormData();
-        fd.append('imagen', archivo);
-        await api(`/categorias/${categoria.id_categoria}/imagen`, { method: 'POST', body: fd });
-      }
-
-      setMsg({ type: 'success', text: modal === 'create' ? 'Categoría creada' : 'Categoría actualizada' });
-      setModal(null);
-      load();
+      setAviso({
+        tipo: 'success',
+        texto: `Categoría «${categoria.nombre}» ${activa ? 'reactivada' : 'desactivada'}.`,
+        deshacer: () => cambiarEstado(categoria, !activa),
+      });
+      cargar();
     } catch (err) {
-      setMsg({ type: 'error', text: err?.message || 'Error al guardar' });
-    } finally {
-      setSaving(false);
+      setAviso({ tipo: 'error', texto: mensajeError(err, 'No se pudo cambiar el estado.') });
     }
   };
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Categorías</h1>
-        <button className="btn btn-primary" onClick={openCreate}>
-          + Nueva categoría
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">Categorías</h1>
+          <p className="muted">Cada categoría es una hilera del catálogo.</p>
+        </div>
+        <button type="button" className="btn btn-primary btn-lg" onClick={() => setEditando(null)}>
+          <Plus size={16} /> Nueva categoría
         </button>
       </div>
 
-      {msg.text && (
-        <div className={msg.type === 'error' ? 'error-banner' : 'success-banner'}>{msg.text}</div>
+      {aviso && (
+        <div style={{ marginBottom: '1rem' }}>
+          <Notice tipo={aviso.tipo} accion={aviso.deshacer && { texto: 'Deshacer', onClick: aviso.deshacer }}>
+            {aviso.texto}
+          </Notice>
+        </div>
       )}
 
-      {loading ? (
-        <div className="loading-screen" style={{ minHeight: 200 }}>
-          <div className="spinner" />
+      <div className="toolbar">
+        <div className="segmented" role="group" aria-label="Estado">
+          <button type="button" aria-pressed={activas} onClick={() => setActivas(true)}>
+            Activas
+          </button>
+          <button type="button" aria-pressed={!activas} onClick={() => setActivas(false)}>
+            Inactivas
+          </button>
+        </div>
+      </div>
+
+      {cargando && categorias.length === 0 ? (
+        <div className="cat-grid">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="skeleton" style={{ aspectRatio: '4 / 3' }} />
+          ))}
+        </div>
+      ) : categorias.length === 0 ? (
+        <div className="empty">
+          <Tags size={32} />
+          <strong>{activas ? 'Aún no hay categorías' : 'No hay categorías desactivadas'}</strong>
         </div>
       ) : (
-        <div className="category-grid">
+        <div className="cat-grid">
           {categorias.map((c) => (
-            <div key={c.id_categoria} className="card" style={{ cursor: 'pointer' }} onClick={() => openEdit(c)}>
-              <div style={{ aspectRatio: '4/3', background: '#f1f5f9', overflow: 'hidden' }}>
-                <img
-                  src={c.imagen || '/sin-imagen.svg'}
-                  alt={c.nombre}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  loading="lazy"
-                />
+            <article key={c.id_categoria} className={c.activo ? 'cat-card' : 'cat-card is-off'}>
+              <div className="cat-foto">
+                <img src={c.imagen || SIN_IMAGEN} alt="" loading="lazy" />
               </div>
-              <div style={{ padding: '0.85rem' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 600 }}>{c.nombre}</h3>
-                {c.descripcion && (
-                  <p className="text-sm text-muted" style={{ marginTop: 4 }}>
-                    {c.descripcion}
-                  </p>
-                )}
+              <div className="cat-cuerpo">
+                <div className="cat-titulo">
+                  <h2 className="row-title">{c.nombre}</h2>
+                  <span className="muted small num">{conteo[c.id_categoria] || 0} productos</span>
+                </div>
+                {c.descripcion && <p className="muted small">{c.descripcion}</p>}
+                <div className="cat-acciones">
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditando(c)}>
+                    <Pencil size={14} /> Editar
+                  </button>
+                  {c.activo ? (
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => cambiarEstado(c, false)}>
+                      <EyeOff size={14} /> Desactivar
+                    </button>
+                  ) : (
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => cambiarEstado(c, true)}>
+                      <RotateCcw size={14} /> Reactivar
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}
 
-      {modal && (
-        <div className="modal-overlay" onClick={() => setModal(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{modal === 'create' ? 'Nueva categoría' : 'Editar categoría'}</h2>
-              <button onClick={() => setModal(null)} style={{ fontSize: '1.25rem' }}>
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleSave}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label>Nombre</label>
-                  <input
-                    value={form.nombre}
-                    onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Descripción</label>
-                  <textarea
-                    value={form.descripcion}
-                    onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-                    rows={2}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Imagen (JPEG, PNG o WebP, máx. 5 MB)</label>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(e) => setArchivo(e.target.files[0] || null)}
-                  />
-                  {form.imagen && !archivo && (
-                    <img
-                      src={form.imagen}
-                      alt="Actual"
-                      style={{ width: 100, height: 75, objectFit: 'cover', borderRadius: 8, marginTop: 8 }}
-                    />
-                  )}
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={() => setModal(null)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {editando !== undefined && (
+        <CategoriaForm
+          key={editando?.id_categoria ?? 'nueva'}
+          categoria={editando}
+          onCerrar={() => setEditando(undefined)}
+          onGuardado={alGuardar}
+        />
       )}
     </div>
   );
