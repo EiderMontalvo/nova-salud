@@ -55,6 +55,10 @@ El administrador las entrega por un canal privado. No las subas al repositorio.
 
 `/admin/productos?nuevo=1` abre el formulario de alta y `/admin/productos?editar=<id>` abre la edición de ese producto.
 
+## Tema visual
+
+Puedes alternar entre modo claro y oscuro desde el menú lateral, la barra superior en móvil o la pantalla de inicio de sesión. La preferencia queda guardada en este navegador.
+
 ## Estructura
 
 ```
