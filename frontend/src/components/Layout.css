@@ -11,7 +11,7 @@
   font-size: 1.375rem;
   line-height: 1;
   letter-spacing: -0.01em;
-  color: var(--deep);
+  color: var(--heading);
 }
 
 .marca b {
@@ -80,8 +80,8 @@
 }
 
 .rail-link.active {
-  color: var(--deep);
-  background: #ffffff;
+  color: var(--heading);
+  background: var(--surface);
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(4, 30, 32, 0.2);
 }
@@ -90,10 +90,11 @@
   color: var(--primary);
 }
 
-.rail-counts {
-  display: flex;
-  gap: 0.25rem;
+.rail-notification-count {
   margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #8fc4c0;
 }
 
 .rail-count {
@@ -107,21 +108,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   background: var(--accent);
-  color: var(--deep);
-}
-
-.rail-counts .rail-count {
-  margin-left: 0;
-}
-
-.rail-count-danger {
-  background: #ff8a80;
-  color: #3d0a07;
-}
-
-.rail-count-warn {
-  background: #ffd27a;
-  color: #3d2800;
+  color: var(--heading);
 }
 
 .rail-section {
@@ -140,6 +127,31 @@
   padding: 0.75rem;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.08);
+}
+
+.theme-toggle-labeled {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  height: 42px;
+  margin-top: auto;
+  padding: 0 0.75rem;
+  border-radius: 12px;
+  color: #c4e3e0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  transition: color 0.15s, background 0.15s;
+}
+
+.theme-toggle-labeled:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.theme-toggle-labeled + .rail-user {
+  margin-top: 0.75rem;
 }
 
 .rail-user-name {
@@ -209,6 +221,11 @@
     color: #ffffff;
   }
 
+  .topbar .theme-toggle {
+    margin-left: auto;
+    margin-right: 0.5rem;
+  }
+
   .content {
     margin-left: 0;
     padding: 1.25rem 1rem calc(84px + env(safe-area-inset-bottom));
@@ -258,8 +275,12 @@
     color: var(--on-primary);
   }
 
-  .tabbar-dot-neutral {
-    background: var(--danger);
-    color: #ffffff;
+  .tabbar-notification-count {
+    position: absolute;
+    top: 0;
+    left: calc(50% + 10px);
+    color: var(--text-2);
+    font-size: 0.6875rem;
+    line-height: 1;
   }
 }

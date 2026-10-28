@@ -5,6 +5,7 @@ import '@fontsource/parisienne/latin-400.css';
 import { useAuth } from '../context/AuthContext';
 import Marca, { Corazon } from '../components/Marca';
 import Notice from '../components/Notice';
+import ThemeToggle from '../components/ThemeToggle';
 import { mensajeError } from '../lib/errores';
 import './Login.css';
 
@@ -45,6 +46,7 @@ export default function Login() {
 
   return (
     <div className="login">
+      <ThemeToggle className="login-theme-toggle" />
       <section className="login-intro">
         <div className="login-intro-marca">
           <Marca grande claro />

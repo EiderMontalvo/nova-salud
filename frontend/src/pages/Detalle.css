@@ -35,7 +35,7 @@
   font-size: 2.5rem;
   line-height: 1;
   letter-spacing: -0.02em;
-  color: var(--deep);
+  color: var(--heading);
 }
 
 .detalle-datos {

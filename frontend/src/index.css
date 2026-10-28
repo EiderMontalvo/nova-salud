@@ -8,6 +8,7 @@
   --text: #0f2f31;
   --text-2: #46605f;
   --text-3: #587072;
+  --heading: var(--deep);
 
   --primary: #0f6b6e;
   --primary-hover: #0c5a5d;
@@ -19,8 +20,10 @@
 
   --danger: #c93c3c;
   --danger-soft: #fcebeb;
+  --danger-text: #8f2424;
   --warn: #9a6200;
   --warn-soft: #fff4dd;
+  --warn-text: #6e4600;
 
   --font-display: 'Lexend', 'Inter', sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
@@ -33,6 +36,35 @@
   --shadow-lift: 0 14px 32px rgba(15, 47, 49, 0.16);
 
   color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #101b1c;
+  --surface: #182627;
+  --elevated: #203132;
+  --line: #2d4142;
+  --line-strong: #43595a;
+  --text: #e7f0ef;
+  --text-2: #c0d0ce;
+  --text-3: #9aafad;
+  --heading: #b5e9e3;
+
+  --primary: #55cfc3;
+  --primary-hover: #77ded4;
+  --on-primary: #102b2b;
+  --accent-soft: #214542;
+
+  --danger: #ff8585;
+  --danger-soft: #492728;
+  --danger-text: #ffc0c0;
+  --warn: #f0bf67;
+  --warn-soft: #463a23;
+  --warn-text: #f4d28a;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.22), 0 1px 3px rgba(0, 0, 0, 0.18);
+  --shadow-lift: 0 14px 32px rgba(0, 0, 0, 0.38);
+
+  color-scheme: dark;
 }
 
 *,
@@ -61,7 +93,7 @@ body {
 
 ::selection {
   background: var(--accent-soft);
-  color: var(--deep);
+  color: var(--heading);
 }
 
 a {
@@ -120,7 +152,7 @@ textarea {
   font-size: 2rem;
   line-height: 1.15;
   letter-spacing: -0.02em;
-  color: var(--deep);
+  color: var(--heading);
 }
 
 .row-title {
@@ -129,7 +161,7 @@ textarea {
   font-size: 1.25rem;
   line-height: 1.2;
   letter-spacing: -0.01em;
-  color: var(--deep);
+  color: var(--heading);
 }
 
 .price {
@@ -137,7 +169,7 @@ textarea {
   font-weight: 600;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
-  color: var(--deep);
+  color: var(--heading);
 }
 
 .muted {
@@ -510,27 +542,27 @@ textarea {
 }
 
 .notice-error {
-  border-color: #f2c4c4;
+  border-color: var(--danger);
   background: var(--danger-soft);
-  color: #8f2424;
+  color: var(--danger-text);
 }
 
 .notice-success {
-  border-color: #b8e6e1;
+  border-color: var(--accent);
   background: var(--accent-soft);
-  color: var(--deep);
+  color: var(--heading);
 }
 
 .notice-warn {
-  border-color: #f2dba8;
+  border-color: var(--warn);
   background: var(--warn-soft);
-  color: #6e4600;
+  color: var(--warn-text);
 }
 
 /* Esqueletos y vacíos */
 
 .skeleton {
-  background: linear-gradient(90deg, #e8efef 0%, #f4f8f8 50%, #e8efef 100%);
+  background: linear-gradient(90deg, var(--elevated) 0%, var(--surface) 50%, var(--elevated) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
   border-radius: var(--radius);
@@ -735,7 +767,7 @@ textarea {
   font-weight: 600;
   font-size: 1.375rem;
   letter-spacing: -0.01em;
-  color: var(--deep);
+  color: var(--heading);
 }
 
 .drawer-body {

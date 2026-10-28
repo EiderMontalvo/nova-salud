@@ -294,7 +294,7 @@
   background: var(--accent-soft);
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--deep);
+  color: var(--heading);
 }
 
 .ticket-total .price {
@@ -397,7 +397,7 @@
   padding: 0.75rem;
   border-radius: var(--radius-sm);
   background: var(--warn-soft);
-  color: #6e4600;
+  color: var(--warn-text);
   font-weight: 500;
 }
 

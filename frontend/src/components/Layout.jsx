@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useVenta } from '../context/VentaContext';
 import { api } from '../api';
 import Marca from './Marca';
+import ThemeToggle from './ThemeToggle';
 import './Layout.css';
 
 const enlaceClase = ({ isActive }) => (isActive ? 'rail-link active' : 'rail-link');
@@ -49,18 +50,11 @@ export default function Layout() {
           </NavLink>
           <NavLink to="/stock-bajo" className={enlaceClase}>
             <TriangleAlert size={18} /> Alertas
-            <span className="rail-counts">
-              {alertas.stock > 0 && (
-                <span className="rail-count rail-count-danger num" title="Stock bajo">
-                  {alertas.stock}
-                </span>
-              )}
-              {alertas.vencer > 0 && (
-                <span className="rail-count rail-count-warn num" title="Por vencer">
-                  {alertas.vencer}
-                </span>
-              )}
-            </span>
+            {totalAlertas > 0 && (
+              <span className="rail-notification-count num" aria-label={`${totalAlertas} alertas`}>
+                {totalAlertas}
+              </span>
+            )}
           </NavLink>
 
           {isAdmin && (
@@ -76,6 +70,8 @@ export default function Layout() {
           )}
         </nav>
 
+        <ThemeToggle showLabel />
+
         <div className="rail-user">
           <div>
             <div className="rail-user-name">{usuario?.nombre}</div>
@@ -89,6 +85,7 @@ export default function Layout() {
 
       <header className="topbar">
         <Marca />
+        <ThemeToggle />
         <button className="icon-btn" onClick={salir} aria-label="Cerrar sesión">
           <LogOut size={16} />
         </button>
@@ -111,7 +108,11 @@ export default function Layout() {
         <NavLink to="/stock-bajo">
           <TriangleAlert size={20} />
           Alertas
-          {totalAlertas > 0 && <span className="tabbar-dot tabbar-dot-neutral num">{totalAlertas}</span>}
+          {totalAlertas > 0 && (
+            <span className="tabbar-notification-count num" aria-label={`${totalAlertas} alertas`}>
+              {totalAlertas}
+            </span>
+          )}
         </NavLink>
         {isAdmin && (
           <NavLink to="/admin/productos">
