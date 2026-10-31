@@ -2,6 +2,8 @@
 
 Aplicación web interna de la botica Nova Salud: catálogo de productos, ventas en mostrador e inventario con alertas. Consume la API REST del [backend](../backend/README.md).
 
+**Producción:** https://nova-salud-rho.vercel.app
+
 ## Stack
 
 - React 19 + Vite 6
@@ -92,7 +94,7 @@ Los estilos globales (`index.css`) se cargan antes que la app, así que el CSS d
 1. Sube el repositorio a GitHub, sin `.env.local` ni `node_modules`.
 2. En Vercel, importa el repositorio y en **Root Directory** elige `frontend`. El framework (Vite), el comando `npm run build` y la carpeta `dist` ya están definidos en `vercel.json`.
 3. En **Settings → Environment Variables**, agrega `VITE_API_URL` con la URL de la API para Production y Preview.
-4. Agrega el dominio de Vercel (por ejemplo `https://nova-salud.vercel.app`) a `CORS_ORIGINS` del backend; si no, el navegador bloqueará las peticiones.
+4. Agrega el dominio de Vercel, `https://nova-salud-rho.vercel.app` (sin barra final), a `CORS_ORIGINS` del backend; si no, el navegador bloqueará las peticiones.
 
 `vercel.json` además:
 

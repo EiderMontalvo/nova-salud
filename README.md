@@ -49,8 +49,8 @@ Para crear la base y el primer administrador, sigue los pasos de [backend/README
 
 ## Despliegue
 
-- **Frontend**: Vercel, con `frontend` como Root Directory y la variable `VITE_API_URL`. Detalle en [frontend/README.md](frontend/README.md#despliegue-en-vercel).
-- **Backend**: cualquier servidor Node.js con acceso a la base de datos. El dominio del frontend debe estar en `CORS_ORIGINS`.
+- **Frontend**: Vercel, en https://nova-salud-rho.vercel.app, con `frontend` como Root Directory y la variable `VITE_API_URL`. Detalle en [frontend/README.md](frontend/README.md#despliegue-en-vercel).
+- **Backend**: cualquier servidor Node.js con acceso a la base de datos. `CORS_ORIGINS` debe incluir `https://nova-salud-rho.vercel.app`.
 
 ## Seguridad
 
