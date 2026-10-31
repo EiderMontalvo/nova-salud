@@ -228,34 +228,37 @@
   margin-top: auto;
 }
 
-/* La tile enfocada es una sola unidad elevada: foto + detalle sobre blanco, con marco verde azulado. */
-.tile-expand:hover,
-.tile-expand:focus-within {
-  background: var(--surface);
-  box-shadow: var(--shadow-lift), 0 0 0 1.5px var(--primary-line);
-  transform: translateY(-6px);
-}
+/* La tile enfocada es una sola unidad elevada: foto + detalle sobre blanco, con marco verde azulado.
+   Solo con mouse: en táctil el foco al tocar «Agregar a venta» la ensanchaba sobre la tile vecina. */
+@media (hover: hover) {
+  .tile-expand:hover,
+  .tile-expand:focus-within {
+    background: var(--surface);
+    box-shadow: var(--shadow-lift), 0 0 0 1.5px var(--primary-line);
+    transform: translateY(-6px);
+  }
 
-.tile-expand:hover .tile-photo,
-.tile-expand:focus-within .tile-photo {
-  box-shadow: none;
-  border-radius: var(--radius) 0 0 0;
-}
+  .tile-expand:hover .tile-photo,
+  .tile-expand:focus-within .tile-photo {
+    box-shadow: none;
+    border-radius: var(--radius) 0 0 0;
+  }
 
-.tile-expand:hover .tile-photo img,
-.tile-expand:focus-within .tile-photo img {
-  transform: scale(1.03);
-}
+  .tile-expand:hover .tile-photo img,
+  .tile-expand:focus-within .tile-photo img {
+    transform: scale(1.03);
+  }
 
-.tile-expand:hover .tile-caption,
-.tile-expand:focus-within .tile-caption {
-  padding: 0.625rem 0.75rem 0.75rem;
-}
+  .tile-expand:hover .tile-caption,
+  .tile-expand:focus-within .tile-caption {
+    padding: 0.625rem 0.75rem 0.75rem;
+  }
 
-.tile-expand:hover .tile-detail,
-.tile-expand:focus-within .tile-detail {
-  width: 228px;
-  opacity: 1;
+  .tile-expand:hover .tile-detail,
+  .tile-expand:focus-within .tile-detail {
+    width: 228px;
+    opacity: 1;
+  }
 }
 
 /* En pantallas táctiles no hay hover: el detalle se ve siempre debajo. */
