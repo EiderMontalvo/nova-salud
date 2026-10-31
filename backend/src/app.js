@@ -15,7 +15,8 @@ function crearApp() {
   app.disable('x-powered-by');
   // En el hosting la API corre detrás de un proxy; sin esto el límite de login vería una sola IP.
   if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
-  app.use(cors({ origin: origenes }));
+  // El frontend está en otro origen: sin maxAge el navegador repite el preflight casi en cada petición.
+  app.use(cors({ origin: origenes, maxAge: 86400 }));
   app.use(express.json({ limit: '1mb' }));
 
   if (process.env.IMAGE_LOCAL_DIRECTORY) {
