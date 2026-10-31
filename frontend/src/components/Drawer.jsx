@@ -24,7 +24,7 @@ export default function Drawer({ abierto, titulo, onCerrar, children, pie, onSub
       }}
     >
       {abierto && (
-        <form onSubmit={onSubmit} style={{ display: 'contents' }}>
+        <form onSubmit={onSubmit} className="drawer-form">
           <div className="drawer-head">
             <h2>{titulo}</h2>
             <button type="button" className="icon-btn" onClick={onCerrar} aria-label="Cerrar">
