@@ -1,24 +1,30 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Catalogo from './pages/Catalogo';
 import ProductoDetalle from './pages/ProductoDetalle';
-import AdminProductos from './pages/AdminProductos';
-import AdminCategorias from './pages/AdminCategorias';
 import Ventas from './pages/Ventas';
 import StockBajo from './pages/StockBajo';
+
+// Las pantallas de administración solo las abre el administrador: se descargan al entrar a ellas.
+const AdminProductos = lazy(() => import('./pages/AdminProductos'));
+const AdminCategorias = lazy(() => import('./pages/AdminCategorias'));
+
+function Cargando() {
+  return (
+    <div className="boot" aria-busy="true">
+      <span className="spinner" />
+      <span className="sr-only">Cargando…</span>
+    </div>
+  );
+}
 
 function RutaProtegida({ children, soloAdmin = false }) {
   const { usuario, loading, isAdmin } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="boot" aria-busy="true">
-        <span className="spinner" />
-      </div>
-    );
-  }
+  if (loading) return <Cargando />;
 
   if (!usuario) return <Navigate to="/login" replace />;
   if (soloAdmin && !isAdmin) return <Navigate to="/" replace />;
@@ -47,7 +53,9 @@ export default function App() {
           path="admin/productos"
           element={
             <RutaProtegida soloAdmin>
-              <AdminProductos />
+              <Suspense fallback={<Cargando />}>
+                <AdminProductos />
+              </Suspense>
             </RutaProtegida>
           }
         />
@@ -55,7 +63,9 @@ export default function App() {
           path="admin/categorias"
           element={
             <RutaProtegida soloAdmin>
-              <AdminCategorias />
+              <Suspense fallback={<Cargando />}>
+                <AdminCategorias />
+              </Suspense>
             </RutaProtegida>
           }
         />

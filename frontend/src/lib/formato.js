@@ -26,8 +26,14 @@ export function estadoVencimiento(texto) {
   const dias = diasParaVencer(texto);
   if (dias === null) return null;
   if (dias < 0) return { tipo: 'danger', texto: 'Vencido' };
-  if (dias <= DIAS_POR_VENCER) return { tipo: 'warn', texto: dias === 0 ? 'Vence hoy' : `Vence en ${dias} d` };
+  if (dias <= DIAS_POR_VENCER) return { tipo: 'warn', texto: textoPorVencer(dias) };
   return null;
+}
+
+function textoPorVencer(dias) {
+  if (dias === 0) return 'Vence hoy';
+  if (dias === 1) return 'Vence mañana';
+  return `Vence en ${dias} días`;
 }
 
 export function stockBajo(producto) {

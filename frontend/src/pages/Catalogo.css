@@ -19,6 +19,10 @@
   height: 52px;
 }
 
+.catalogo-error {
+  margin-bottom: 1.5rem;
+}
+
 /* Muro: hileras por categoría */
 
 .wall {
@@ -183,6 +187,18 @@
   color: var(--text-3);
 }
 
+/* Cada dato ocupa una sola línea para que las tiles vecinas queden alineadas fila a fila. */
+.tile-detail-inner .stock,
+.tile-facts div {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.tile-facts dt.texto-warn,
+.tile-facts dt.texto-danger {
+  font-weight: 600;
+}
+
 .tile-detail-nombre {
   display: none;
 }
@@ -216,7 +232,7 @@
 .tile-expand:hover,
 .tile-expand:focus-within {
   background: var(--surface);
-  box-shadow: var(--shadow-lift), 0 0 0 1.5px var(--primary);
+  box-shadow: var(--shadow-lift), 0 0 0 1.5px var(--primary-line);
   transform: translateY(-6px);
 }
 
@@ -264,8 +280,13 @@
 
   .tile-expand .tile-detail-inner {
     width: auto;
-    height: auto;
+    height: 100%;
     padding: 0.5rem 0.25rem 0;
+  }
+
+  /* Las tiles de una hilera se estiran a la más alta; el detalle llena ese alto y el botón queda abajo. */
+  .tile-expand .tile-detail {
+    flex: 1;
   }
 }
 
@@ -291,13 +312,22 @@
   width: auto;
 }
 
+.grid .tile-detail {
+  flex: 1;
+}
+
 .grid .tile-detail-inner {
+  height: 100%;
   padding: 0.5rem 0.25rem 0;
   gap: 0.5rem;
 }
 
+.grid .tile-detail-inner .btn {
+  margin-top: auto;
+}
+
 .grid .tile:hover .tile-photo {
-  box-shadow: var(--shadow-sm), inset 0 0 0 1.5px var(--primary);
+  box-shadow: var(--shadow-sm), inset 0 0 0 1.5px var(--primary-line);
 }
 
 @media (max-width: 900px) {

@@ -5,10 +5,11 @@ import { api, cuerpoProducto, traerTodos } from '../api';
 import { useDebounce } from '../hooks/useDebounce';
 import ProductoForm from '../components/ProductoForm';
 import StockEstado from '../components/StockEstado';
-import Notice from '../components/Notice';
+import FechaVencimiento from '../components/FechaVencimiento';
 import { SIN_IMAGEN } from '../components/ProductTile';
+import { useToast } from '../context/ToastContext';
 import { mensajeError } from '../lib/errores';
-import { soles, fecha, estadoVencimiento } from '../lib/formato';
+import { soles } from '../lib/formato';
 
 const POR_PAGINA = 20;
 
@@ -18,7 +19,7 @@ export default function AdminProductos() {
   const [productos, setProductos] = useState([]);
   const [paginacion, setPaginacion] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [aviso, setAviso] = useState(null);
+  const avisar = useToast();
   const [busqueda, setBusqueda] = useState('');
   const [categoriaId, setCategoriaId] = useState('');
   const [activos, setActivos] = useState(true);
@@ -42,8 +43,8 @@ export default function AdminProductos() {
   useEffect(() => {
     traerTodos('/categorias')
       .then(setCategorias)
-      .catch((err) => setAviso({ tipo: 'error', texto: mensajeError(err, 'No se pudieron cargar las categorías.') }));
-  }, []);
+      .catch((err) => avisar({ tipo: 'error', texto: mensajeError(err, 'No se pudieron cargar las categorías.') }));
+  }, [avisar]);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -55,11 +56,11 @@ export default function AdminProductos() {
       setProductos(res.data);
       setPaginacion(res.pagination);
     } catch (err) {
-      setAviso({ tipo: 'error', texto: mensajeError(err, 'No se pudieron cargar los productos.') });
+      avisar({ tipo: 'error', texto: mensajeError(err, 'No se pudieron cargar los productos.') });
     } finally {
       setCargando(false);
     }
-  }, [pagina, activos, consulta, categoriaId]);
+  }, [pagina, activos, consulta, categoriaId, avisar]);
 
   useEffect(() => {
     cargar();
@@ -73,9 +74,9 @@ export default function AdminProductos() {
     } else if (idEditar) {
       api(`/productos/${idEditar}`)
         .then((res) => setEditando(res.data))
-        .catch((err) => setAviso({ tipo: 'error', texto: mensajeError(err, 'Producto no encontrado.') }));
+        .catch((err) => avisar({ tipo: 'error', texto: mensajeError(err, 'Producto no encontrado.') }));
     }
-  }, [params]);
+  }, [params, avisar]);
 
   const cerrarFormulario = () => {
     setEditando(undefined);
@@ -84,26 +85,25 @@ export default function AdminProductos() {
 
   const alGuardar = (producto, accion) => {
     cerrarFormulario();
-    setAviso({ tipo: 'success', texto: `«${producto.nombre}» ${accion}.` });
+    avisar({ tipo: 'success', texto: `«${producto.nombre}» ${accion}.` });
     cargar();
   };
 
   const cambiarEstado = async (producto, activo) => {
-    setAviso(null);
     try {
       if (activo) {
         await api(`/productos/${producto.id_producto}`, { method: 'PUT', body: cuerpoProducto(producto, { activo: true }) });
       } else {
         await api(`/productos/${producto.id_producto}`, { method: 'DELETE' });
       }
-      setAviso({
+      avisar({
         tipo: 'success',
         texto: `«${producto.nombre}» ${activo ? 'reactivado' : 'desactivado'}.`,
-        deshacer: () => cambiarEstado(producto, !activo),
+        accion: { texto: 'Deshacer', onClick: () => cambiarEstado(producto, !activo) },
       });
       cargar();
     } catch (err) {
-      setAviso({ tipo: 'error', texto: mensajeError(err, 'No se pudo cambiar el estado.') });
+      avisar({ tipo: 'error', texto: mensajeError(err, 'No se pudo cambiar el estado.') });
     }
   };
 
@@ -122,14 +122,6 @@ export default function AdminProductos() {
           <Plus size={16} /> Nuevo producto
         </button>
       </div>
-
-      {aviso && (
-        <div style={{ marginBottom: '1rem' }}>
-          <Notice tipo={aviso.tipo} accion={aviso.deshacer && { texto: 'Deshacer', onClick: aviso.deshacer }}>
-            {aviso.texto}
-          </Notice>
-        </div>
-      )}
 
       <div className="toolbar">
         <div className="search">
@@ -200,56 +192,48 @@ export default function AdminProductos() {
               </tr>
             </thead>
             <tbody>
-              {productos.map((p) => {
-                const vence = estadoVencimiento(p.fecha_vencimiento);
-                return (
-                  <tr key={p.id_producto} className={p.activo ? '' : 'is-off'}>
-                    <td className="c-producto">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <img className="thumb" src={p.imagen || SIN_IMAGEN} alt="" loading="lazy" />
-                        <div>
-                          <div className="cell-name">{p.nombre}</div>
-                          <div className="cell-code">
-                            {p.codigo}
-                            {!p.activo && <span className="tag tag-off" style={{ marginLeft: 6 }}>Desactivado</span>}
-                          </div>
+              {productos.map((p) => (
+                <tr key={p.id_producto} className={p.activo ? '' : 'is-off'}>
+                  <td className="c-producto">
+                    <div className="celda-producto">
+                      <img className="thumb" src={p.imagen || SIN_IMAGEN} alt="" loading="lazy" />
+                      <div>
+                        <div className="cell-name">{p.nombre}</div>
+                        <div className="cell-code">
+                          {p.codigo}
+                          {!p.activo && <span className="tag tag-off">Desactivado</span>}
                         </div>
                       </div>
-                    </td>
-                    <td className="muted col-opcional">{nombreCategoria[p.id_categoria] || '—'}</td>
-                    <td className="num c-precio" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
-                      {soles(p.precio)}
-                    </td>
-                    <td className="c-stock" style={{ minWidth: 170 }}>
-                      <StockEstado stock={p.stock} minimo={p.stock_minimo} />
-                    </td>
-                    <td className="num col-opcional" style={{ whiteSpace: 'nowrap' }}>
-                      {fecha(p.fecha_vencimiento)}
-                      {vence && (
-                        <div>
-                          <span className={`tag tag-${vence.tipo}`}>{vence.texto}</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="c-acciones">
-                      <div className="actions">
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditando(p)}>
-                          <Pencil size={14} /> Editar
+                    </div>
+                  </td>
+                  <td className="muted col-opcional">{nombreCategoria[p.id_categoria] || '—'}</td>
+                  <td className="num c-precio">
+                    {soles(p.precio)}
+                  </td>
+                  <td className="c-stock">
+                    <StockEstado stock={p.stock} minimo={p.stock_minimo} />
+                  </td>
+                  <td className="col-opcional">
+                    <FechaVencimiento valor={p.fecha_vencimiento} />
+                  </td>
+                  <td className="c-acciones">
+                    <div className="actions">
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditando(p)}>
+                        <Pencil size={14} /> Editar
+                      </button>
+                      {p.activo ? (
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => cambiarEstado(p, false)}>
+                          <EyeOff size={14} /> Desactivar
                         </button>
-                        {p.activo ? (
-                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => cambiarEstado(p, false)}>
-                            <EyeOff size={14} /> Desactivar
-                          </button>
-                        ) : (
-                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => cambiarEstado(p, true)}>
-                            <RotateCcw size={14} /> Reactivar
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      ) : (
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => cambiarEstado(p, true)}>
+                          <RotateCcw size={14} /> Reactivar
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

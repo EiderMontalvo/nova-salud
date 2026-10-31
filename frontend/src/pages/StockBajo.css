@@ -1,0 +1,10 @@
+/* Alertas: dos tablas separadas con aire; los encabezados van pegados a su tabla */
+
+.alertas {
+  gap: 2.5rem;
+}
+
+.alertas .page-head,
+.alertas .row-head {
+  margin-bottom: 0;
+}

@@ -1,14 +1,53 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutGrid, ShoppingCart, TriangleAlert, Package, Tags, LogOut } from 'lucide-react';
+import {
+  LayoutGrid,
+  ShoppingCart,
+  TriangleAlert,
+  Package,
+  Tags,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useVenta } from '../context/VentaContext';
+import { usePreferencia } from '../hooks/usePreferencia';
 import { api } from '../api';
-import Marca from './Marca';
+import Marca, { Corazon } from './Marca';
 import ThemeToggle from './ThemeToggle';
 import './Layout.css';
 
+// Una sola definición de la navegación para el riel de escritorio y la barra inferior del móvil.
+const SECCIONES = [
+  {
+    titulo: 'Tienda',
+    enlaces: [
+      { to: '/', end: true, icono: LayoutGrid, texto: 'Catálogo', ayuda: 'Buscar productos y precios' },
+      { to: '/ventas', icono: ShoppingCart, texto: 'Vender', ayuda: 'Registrar una venta', contador: 'venta' },
+      { to: '/stock-bajo', icono: TriangleAlert, texto: 'Alertas', ayuda: 'Stock bajo y por vencer', contador: 'alertas' },
+    ],
+  },
+  {
+    titulo: 'Administración',
+    soloAdmin: true,
+    enlaces: [
+      { to: '/admin/productos', icono: Package, texto: 'Productos', ayuda: 'Crear y editar' },
+      { to: '/admin/categorias', icono: Tags, texto: 'Categorías', ayuda: 'Organizar el catálogo' },
+    ],
+  },
+];
+
 const enlaceClase = ({ isActive }) => (isActive ? 'rail-link active' : 'rail-link');
+
+function iniciales(nombre = '') {
+  return nombre
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0].toUpperCase())
+    .join('');
+}
 
 export default function Layout() {
   const { usuario, logout, isAdmin } = useAuth();
@@ -16,6 +55,9 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [alertas, setAlertas] = useState({ stock: null, vencer: null });
+  const [plegado, setPlegado] = usePreferencia('nova-salud-riel-plegado', false);
+  const contenidoRef = useRef(null);
+  const rutaAnterior = useRef(location.pathname);
 
   // Se recalcula al navegar para que una venta o una edición se refleje en los contadores.
   useEffect(() => {
@@ -26,106 +68,117 @@ export default function Layout() {
       .catch(() => {});
   }, [location.pathname]);
 
+  // Al cambiar de pantalla, el foco pasa al contenido para que el lector anuncie la página nueva,
+  // salvo que la página ya haya enfocado algo propio (p. ej. su buscador).
+  useEffect(() => {
+    // Se compara con la ruta anterior (no con un «primer render») para que el doble efecto de StrictMode no robe el foco al cargar.
+    if (rutaAnterior.current === location.pathname) return;
+    rutaAnterior.current = location.pathname;
+    const main = contenidoRef.current;
+    if (main && !main.contains(document.activeElement)) main.focus({ preventScroll: true });
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   const salir = () => {
     logout();
     navigate('/login');
   };
 
-  const totalAlertas = (alertas.stock || 0) + (alertas.vencer || 0);
+  const contadores = {
+    venta: unidades,
+    alertas: (alertas.stock || 0) + (alertas.vencer || 0),
+  };
+
+  const secciones = SECCIONES.filter((s) => !s.soloAdmin || isAdmin);
+  const rol = usuario?.rol === 'ADMIN' ? 'Administrador' : 'Vendedor';
 
   return (
-    <div className="shell">
+    <div className={plegado ? 'shell is-plegado' : 'shell'}>
+      <a href="#contenido" className="saltar">
+        Saltar al contenido
+      </a>
       <aside className="rail">
         <div className="rail-brand">
-          <Marca claro />
+          {plegado ? <Corazon className="marca-corazon" /> : <Marca claro />}
         </div>
 
         <nav className="rail-nav" aria-label="Principal">
-          <NavLink to="/" end className={enlaceClase}>
-            <LayoutGrid size={18} /> Catálogo
-          </NavLink>
-          <NavLink to="/ventas" className={enlaceClase}>
-            <ShoppingCart size={18} /> Vender
-            {unidades > 0 && <span className="rail-count num">{unidades}</span>}
-          </NavLink>
-          <NavLink to="/stock-bajo" className={enlaceClase}>
-            <TriangleAlert size={18} /> Alertas
-            {totalAlertas > 0 && (
-              <span className="rail-notification-count num" aria-label={`${totalAlertas} alertas`}>
-                {totalAlertas}
-              </span>
-            )}
-          </NavLink>
-
-          {isAdmin && (
-            <>
-              <div className="rail-section">Administración</div>
-              <NavLink to="/admin/productos" className={enlaceClase}>
-                <Package size={18} /> Productos
-              </NavLink>
-              <NavLink to="/admin/categorias" className={enlaceClase}>
-                <Tags size={18} /> Categorías
-              </NavLink>
-            </>
-          )}
+          {secciones.map((seccion) => (
+            <div key={seccion.titulo} className="rail-grupo">
+              <div className="rail-section">{seccion.titulo}</div>
+              {seccion.enlaces.map(({ to, end, icono: Icono, texto, ayuda, contador }) => {
+                const cuenta = contador ? contadores[contador] : 0;
+                return (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={end}
+                    className={enlaceClase}
+                    title={plegado ? `${texto}: ${ayuda}` : undefined}
+                    aria-label={plegado ? (cuenta > 0 ? `${texto}, ${cuenta}` : texto) : undefined}
+                  >
+                    <Icono size={18} className="rail-icono" aria-hidden="true" />
+                    <span className="rail-texto">
+                      <span className="rail-titulo">{texto}</span>
+                      <span className="rail-ayuda">{ayuda}</span>
+                    </span>
+                    {cuenta > 0 && <span className="rail-count num">{cuenta}</span>}
+                  </NavLink>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
-        <ThemeToggle showLabel />
-
-        <div className="rail-user">
-          <div>
-            <div className="rail-user-name">{usuario?.nombre}</div>
-            <div className="rail-user-role">{usuario?.rol === 'ADMIN' ? 'Administrador' : 'Vendedor'}</div>
-          </div>
-          <button className="rail-salir" onClick={salir} aria-label="Cerrar sesión" title="Cerrar sesión">
-            <LogOut size={16} />
-          </button>
-        </div>
+        <button
+          type="button"
+          className="rail-plegar"
+          onClick={() => setPlegado((actual) => !actual)}
+          aria-expanded={!plegado}
+          aria-label={plegado ? 'Mostrar menú' : undefined}
+          title={plegado ? 'Mostrar menú' : undefined}
+        >
+          {plegado ? <PanelLeftOpen size={18} aria-hidden="true" /> : <PanelLeftClose size={18} aria-hidden="true" />}
+          <span className="rail-texto">Ocultar menú</span>
+        </button>
       </aside>
 
       <header className="topbar">
-        <Marca />
+        <span className="topbar-marca">
+          <Marca />
+        </span>
+        <div className="topbar-usuario">
+          <span className="avatar" aria-hidden="true">
+            {iniciales(usuario?.nombre)}
+          </span>
+          <span className="topbar-usuario-texto">
+            <span className="topbar-usuario-nombre">{usuario?.nombre}</span>
+            <span className="topbar-usuario-rol">{rol}</span>
+          </span>
+        </div>
         <ThemeToggle />
-        <button className="icon-btn" onClick={salir} aria-label="Cerrar sesión">
+        <button type="button" className="icon-btn" onClick={salir} aria-label="Cerrar sesión" title="Cerrar sesión">
           <LogOut size={16} />
         </button>
       </header>
 
-      <main className="content">
+      <main id="contenido" className="content" ref={contenidoRef} tabIndex={-1}>
         <Outlet />
       </main>
 
       <nav className="tabbar" aria-label="Principal">
-        <NavLink to="/" end>
-          <LayoutGrid size={20} />
-          Catálogo
-        </NavLink>
-        <NavLink to="/ventas">
-          <ShoppingCart size={20} />
-          Vender
-          {unidades > 0 && <span className="tabbar-dot num">{unidades}</span>}
-        </NavLink>
-        <NavLink to="/stock-bajo">
-          <TriangleAlert size={20} />
-          Alertas
-          {totalAlertas > 0 && (
-            <span className="tabbar-notification-count num" aria-label={`${totalAlertas} alertas`}>
-              {totalAlertas}
-            </span>
-          )}
-        </NavLink>
-        {isAdmin && (
-          <NavLink to="/admin/productos">
-            <Package size={20} />
-            Productos
-          </NavLink>
-        )}
-        {isAdmin && (
-          <NavLink to="/admin/categorias">
-            <Tags size={20} />
-            Categorías
-          </NavLink>
-        )}
+        {secciones
+          .flatMap((s) => s.enlaces)
+          .map(({ to, end, icono: Icono, texto, contador }) => {
+            const cuenta = contador ? contadores[contador] : 0;
+            return (
+              <NavLink key={to} to={to} end={end}>
+                <Icono size={20} />
+                {texto}
+                {cuenta > 0 && <span className="tabbar-count num">{cuenta}</span>}
+              </NavLink>
+            );
+          })}
       </nav>
     </div>
   );

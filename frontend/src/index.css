@@ -12,16 +12,27 @@
 
   --primary: #0f6b6e;
   --primary-hover: #0c5a5d;
+  /* Bordes, contornos y foco: en oscuro un tono apagado para que no brillen como neón (≥3:1 con los fondos). */
+  --primary-line: var(--primary);
   --on-primary: #ffffff;
   --accent: #2ec4b6;
   --accent-soft: #e0f4f2;
   --deep: #0a4a4f;
   --deep-2: #0e6468;
 
-  --danger: #c93c3c;
+  /* Texto y trazos sobre --deep (riel, barra móvil, login); igual en ambos temas porque --deep no cambia */
+  --on-deep: #ffffff;
+  --on-deep-2: #cfe9e6;
+  --on-deep-3: #8fc4c0;
+  --on-deep-accent: #6ee6d9;
+  --on-deep-hover: rgba(255, 255, 255, 0.08);
+  --on-deep-line: rgba(255, 255, 255, 0.14);
+  --on-deep-line-strong: rgba(255, 255, 255, 0.3);
+
+  --danger: #b83535;
   --danger-soft: #fcebeb;
   --danger-text: #8f2424;
-  --warn: #9a6200;
+  --warn: #8a5800;
   --warn-soft: #fff4dd;
   --warn-text: #6e4600;
 
@@ -31,6 +42,7 @@
   --radius: 16px;
   --radius-sm: 10px;
   --rail: 240px;
+  --topbar: 64px;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --shadow-sm: 0 1px 2px rgba(15, 47, 49, 0.06), 0 1px 3px rgba(15, 47, 49, 0.05);
   --shadow-lift: 0 14px 32px rgba(15, 47, 49, 0.16);
@@ -51,6 +63,7 @@
 
   --primary: #55cfc3;
   --primary-hover: #77ded4;
+  --primary-line: #4a9d96;
   --on-primary: #102b2b;
   --accent-soft: #214542;
 
@@ -77,6 +90,8 @@
 
 html {
   font-size: 16px;
+  /* Que el foco por teclado no quede debajo de la barra superior fija. */
+  scroll-padding-top: calc(var(--topbar) + 1rem);
   -webkit-text-size-adjust: 100%;
 }
 
@@ -122,7 +137,7 @@ textarea {
 }
 
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--primary-line);
   outline-offset: 2px;
 }
 
@@ -244,7 +259,7 @@ textarea {
 }
 
 .btn-ghost:hover:not(:disabled) {
-  border-color: var(--primary);
+  border-color: var(--primary-line);
   color: var(--primary);
 }
 
@@ -278,7 +293,7 @@ textarea {
 }
 
 .icon-btn:hover:not(:disabled) {
-  border-color: var(--primary);
+  border-color: var(--primary-line);
   color: var(--primary);
 }
 
@@ -295,7 +310,8 @@ textarea {
   gap: 0.375rem;
 }
 
-.field > span {
+.field > span,
+.field > label {
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text);
@@ -329,7 +345,7 @@ textarea {
 .select:focus,
 .textarea:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: var(--primary-line);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
@@ -429,39 +445,32 @@ textarea {
   box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line);
 }
 
-/* Etiquetas de estado */
+/* Etiquetas de estado: solo texto con color, sin fondo ni recuadro */
 
 .tag {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  height: 22px;
-  padding: 0 0.5rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .tag-ok {
   color: var(--primary);
-  background: var(--accent-soft);
 }
 
 .tag-danger {
   color: var(--danger);
-  background: var(--danger-soft);
 }
 
 .tag-warn {
   color: var(--warn);
-  background: var(--warn-soft);
 }
 
 .tag-off {
-  color: var(--text-2);
-  background: var(--elevated);
-  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-3);
+  font-weight: 500;
 }
 
 /* Stock como texto: cantidad, unidad y estado frente al mínimo */
@@ -476,20 +485,9 @@ textarea {
 }
 
 .stock-qty {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
-}
-
-.stock-qty::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
 }
 
 .stock-min {
@@ -501,13 +499,18 @@ textarea {
   color: var(--danger);
 }
 
-.stock.is-low .stock-qty::before {
-  background: var(--danger);
+/* Vencimiento: la fecha manda; el estado va debajo como texto de apoyo */
+
+.vencimiento {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  white-space: nowrap;
 }
 
-.stock.is-out .stock-qty::before {
-  background: transparent;
-  box-shadow: inset 0 0 0 2px var(--danger);
+.vencimiento-estado {
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 /* Avisos */
@@ -548,7 +551,7 @@ textarea {
 }
 
 .notice-success {
-  border-color: var(--accent);
+  border-color: var(--primary-line);
   background: var(--accent-soft);
   color: var(--heading);
 }
@@ -557,6 +560,101 @@ textarea {
   border-color: var(--warn);
   background: var(--warn-soft);
   color: var(--warn-text);
+}
+
+/* Avisos flotantes: confirman una acción desde el lateral derecho sin desplazar la página */
+
+.toasts {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  width: min(360px, calc(100vw - 2rem));
+  padding: 0.75rem 0.75rem 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-lift);
+  font-size: 0.875rem;
+  color: var(--text);
+  pointer-events: auto;
+  animation: toast-in 0.22s var(--ease);
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}
+
+.toast-icono {
+  flex: none;
+  margin-top: 2px;
+}
+
+.toast-success .toast-icono {
+  color: var(--primary);
+}
+
+.toast-error .toast-icono {
+  color: var(--danger);
+}
+
+.toast-warn .toast-icono {
+  color: var(--warn);
+}
+
+.toast-texto {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.toast-accion {
+  flex: none;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.toast-cerrar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: -3px -3px -3px 0;
+  border-radius: 6px;
+  color: var(--text-3);
+}
+
+.toast-cerrar:hover {
+  color: var(--text);
+  background: var(--elevated);
+}
+
+@media (max-width: 900px) {
+  .toasts {
+    right: 1rem;
+    left: 1rem;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+
+  .toast {
+    width: 100%;
+  }
 }
 
 /* Esqueletos y vacíos */
@@ -690,6 +788,29 @@ textarea {
   color: var(--text);
 }
 
+.celda-producto {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cell-code .tag {
+  margin-left: 0.375rem;
+}
+
+.c-precio {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.c-stock {
+  min-width: 180px;
+}
+
+.drawer-form {
+  display: contents;
+}
+
 .cell-code {
   font-size: 0.75rem;
   color: var(--text-3);
@@ -804,7 +925,7 @@ textarea {
 }
 
 .dropzone.is-over {
-  border-color: var(--primary);
+  border-color: var(--primary-line);
   background: var(--accent-soft);
 }
 
@@ -964,11 +1085,57 @@ textarea {
   }
 }
 
+/* Táctil: los controles compactos llegan a 44 px de área sin cambiar cómo se ven con mouse */
+@media (pointer: coarse) {
+  .btn {
+    height: 44px;
+  }
+
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .btn-sm {
+    position: relative;
+  }
+
+  .btn-sm::after {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+  }
+
+  .toast-cerrar {
+    width: 44px;
+    height: 44px;
+    margin: -11px -11px -11px 0;
+  }
+}
+
+/* Movimiento reducido: sin desplazamientos, pero los avisos y paneles aún se funden para marcar el cambio
+   y el spinner sigue girando lento para indicar que algo carga. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .toast,
+  .drawer[open] {
+    animation: aparecer 0.15s ease-out !important;
+  }
+
+  .spinner {
+    animation-duration: 1.6s !important;
+  }
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
   }
 }

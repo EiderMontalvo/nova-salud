@@ -37,14 +37,11 @@ export default function ProductTile({ producto, categoria, expandible = true }) 
             {producto.codigo}
             {categoria && ` · ${categoria}`}
           </div>
-          <StockEstado stock={producto.stock} minimo={producto.stock_minimo} />
+          <StockEstado stock={producto.stock} minimo={producto.stock_minimo} breve />
           <dl className="tile-facts">
             <div>
-              <dt>Vence</dt>
-              <dd className={vence ? `num texto-${vence.tipo}` : 'num'}>
-                {fecha(producto.fecha_vencimiento)}
-                {vence && ` · ${vence.texto.toLowerCase()}`}
-              </dd>
+              <dt className={vence ? `texto-${vence.tipo}` : undefined}>{vence ? vence.texto : 'Vence'}</dt>
+              <dd className={vence ? `num texto-${vence.tipo}` : 'num'}>{fecha(producto.fecha_vencimiento)}</dd>
             </div>
           </dl>
           <button

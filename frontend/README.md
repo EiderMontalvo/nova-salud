@@ -1,36 +1,39 @@
 # Nova Salud — Frontend
 
-Sistema interno de la botica Nova Salud: catálogo de productos, ventas en mostrador e inventario con alertas. Consume la API de Nova Salud.
+Aplicación web interna de la botica Nova Salud: catálogo de productos, ventas en mostrador e inventario con alertas. Consume la API REST del [backend](../backend/README.md).
 
 ## Stack
 
-- React 19 + Vite
+- React 19 + Vite 6
 - React Router 7
-- CSS propio con tokens en `src/index.css` (sin frameworks)
+- CSS propio con tokens en `src/index.css` (sin frameworks), con tema claro y oscuro
 - Íconos `lucide-react`; tipografías Inter y Lexend servidas desde el proyecto (`@fontsource`)
 
 ## Inicio rápido
 
 ```bash
-# 1. Instalar dependencias
 npm install
-
-# 2. Crear .env.local con la URL de la API
-echo "VITE_API_URL=https://api-novasalud.im-ra.com/api" > .env.local
-
-# 3. Arrancar en desarrollo
-npm run dev
+cp .env.example .env.local   # ajusta VITE_API_URL si usas otra API
+npm run dev                  # http://localhost:5173
 ```
 
-Abre http://localhost:5173
+| Script | Qué hace |
+|--------|----------|
+| `npm run dev` | Servidor de desarrollo con recarga en caliente |
+| `npm run build` | Compila a `dist/` para producción |
+| `npm run preview` | Sirve `dist/` localmente para revisar el build |
+
+### Variables de entorno
+
+| Variable | Ejemplo | Uso |
+|----------|---------|-----|
+| `VITE_API_URL` | `https://api-novasalud.im-ra.com/api` | URL base de la API, sin barra final |
+
+Vite incrusta la variable al compilar: si la cambias, vuelve a ejecutar el build o a desplegar.
 
 ## Documentación de la API (Swagger)
 
-Todos los endpoints, con sus parámetros y respuestas, están en:
-
-**https://api-novasalud.im-ra.com/api-docs**
-
-El navegador pide usuario y contraseña. Ingresa con la cuenta **admin del diseñador** (`frontend-admin@novasalud.im-ra.com`) y su contraseña.
+Todos los endpoints, con sus parámetros y respuestas: **https://api-novasalud.im-ra.com/api-docs**. El navegador pide usuario y contraseña; usa la cuenta admin del diseñador.
 
 ## Credenciales de prueba
 
@@ -46,39 +49,53 @@ El administrador las entrega por un canal privado. No las subas al repositorio.
 | Ruta | Descripción | Rol |
 |------|-------------|-----|
 | `/login` | Inicio de sesión | Público |
-| `/` | Catálogo en hileras por categoría, búsqueda y selector de categoría. Al pasar el mouse por un producto se ve su stock, vencimiento y "Agregar a venta" | Todos |
+| `/` | Catálogo en hileras por categoría, con búsqueda y filtro. Cada producto muestra precio, stock, vencimiento y "Agregar a venta" | Todos |
 | `/producto/:id` | Detalle de producto | Todos |
-| `/ventas` | Punto de venta: productos con foto, ticket con cantidades, cliente opcional, forma de pago, monto recibido y vuelto en efectivo, y comprobante imprimible | Todos |
+| `/ventas` | Punto de venta: productos con foto, ticket con cantidades, cliente opcional, forma de pago (efectivo, Yape, Plin, tarjeta) y comprobante imprimible | Todos |
 | `/stock-bajo` | Alertas de stock bajo y de productos por vencer | Todos |
-| `/admin/productos` | CRUD de productos: búsqueda, filtro por categoría, activos/inactivos, paginación, foto con vista previa (arrastrar, cambiar, quitar), desactivar y reactivar | ADMIN |
-| `/admin/categorias` | CRUD de categorías con imagen, desactivar y reactivar | ADMIN |
+| `/admin/productos` | Alta, edición, foto, desactivación y reactivación de productos, con búsqueda, filtros y paginación | ADMIN |
+| `/admin/categorias` | Alta, edición, imagen, desactivación y reactivación de categorías | ADMIN |
 
-`/admin/productos?nuevo=1` abre el formulario de alta y `/admin/productos?editar=<id>` abre la edición de ese producto.
+`/admin/productos?nuevo=1` abre el formulario de alta y `/admin/productos?editar=<id>` la edición de ese producto.
 
-## Tema visual
+## Funcionalidades destacadas
 
-Puedes alternar entre modo claro y oscuro desde el menú lateral, la barra superior en móvil o la pantalla de inicio de sesión. La preferencia queda guardada en este navegador.
+- **Punto de venta**: el ticket cabe en pantalla y el total con el botón "Cobrar" siempre queda a la vista. En efectivo calcula el vuelto con billetes rápidos; con Yape, Plin o tarjeta guía el cobro y pide confirmar que el pago llegó.
+- **Clientes sin exponer la cartera**: no se lista a los clientes. Se buscan por DNI, RUC o nombre a partir de 3 caracteres (máximo 5 resultados) y se pueden registrar desde la caja con solo el nombre.
+- **Avisos flotantes**: las confirmaciones (guardado, desactivación con "Deshacer", venta registrada) aparecen en el lateral derecho y se pausan mientras el cursor o el foco están encima.
+- **Navegación**: menú lateral plegable que recuerda su estado; en móvil, barra superior y barra inferior de pestañas.
+- **Tema claro y oscuro**: se alterna desde la barra superior o el login, se guarda en el navegador y se aplica antes del primer pintado, sin destellos.
+- **Accesibilidad**: enlace "Saltar al contenido", foco al contenido al cambiar de pantalla, controles con nombre accesible, contraste AA en ambos temas y áreas táctiles de 44 px en pantallas táctiles.
+- **Carga diferida**: las pantallas de administración se descargan solo cuando se abren.
 
 ## Estructura
 
 ```
 src/
   api.js         → Cliente HTTP, paginación completa (traerTodos) y cuerpos para PUT
-  context/       → AuthContext (sesión y roles), VentaContext (venta en curso)
-  hooks/         → useCatalogo (catálogo activo), useDebounce
-  lib/           → formato (soles, fechas, vencimiento), errores (mensajes de la API)
-  components/    → Layout, marca, tiles e hileras, Drawer, ImageDrop, StockEstado, formularios
+  context/       → Auth (sesión y roles), Venta (venta en curso), Theme (tema), Toast (avisos flotantes)
+  hooks/         → useCatalogo, useDebounce, usePreferencia (estado guardado en el navegador)
+  lib/           → formato (soles, fechas, vencimiento), errores (mensajes de la API), dispositivo
+  components/    → Layout, marca, tiles e hileras, Drawer, formularios, buscador de clientes, pago digital
+  assets/pagos/  → Logos de formas de pago (origen y licencias en CREDITOS.md)
   pages/         → Pantallas y su CSS
 public/
+  favicon.svg, apple-touch-icon.png, icon-192.png, icon-512.png, site.webmanifest → isotipo e íconos de la app
   fondo-login.webp, fondo-login-movil.webp → fondo del login
   sin-imagen.svg → imagen para productos sin foto
 ```
 
+Los estilos globales (`index.css`) se cargan antes que la app, así que el CSS de cada pantalla puede sobrescribirlos con la misma especificidad.
+
 ## Despliegue en Vercel
 
-1. Sube el repo a GitHub sin `.env.local` ni `node_modules`.
-2. En Vercel, importa el proyecto con el framework Vite.
-3. Agrega la variable de entorno `VITE_API_URL` = `https://api-novasalud.im-ra.com/api`.
-4. Llama al proyecto **nova-salud** para que la URL `https://nova-salud.vercel.app` esté autorizada en CORS.
+1. Sube el repositorio a GitHub, sin `.env.local` ni `node_modules`.
+2. En Vercel, importa el repositorio y en **Root Directory** elige `frontend`. El framework (Vite), el comando `npm run build` y la carpeta `dist` ya están definidos en `vercel.json`.
+3. En **Settings → Environment Variables**, agrega `VITE_API_URL` con la URL de la API para Production y Preview.
+4. Agrega el dominio de Vercel (por ejemplo `https://nova-salud.vercel.app`) a `CORS_ORIGINS` del backend; si no, el navegador bloqueará las peticiones.
 
-`vercel.json` ya redirige todas las rutas a `index.html` para que funcione el enrutado de la SPA.
+`vercel.json` además:
+
+- Redirige todas las rutas a `index.html` para que funcione el enrutado de la SPA al recargar o abrir un enlace directo.
+- Cachea un año los archivos de `/assets/` (llevan hash en el nombre, así que cada build nuevo usa archivos nuevos).
+- Envía cabeceras de seguridad básicas: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` y `Permissions-Policy`.

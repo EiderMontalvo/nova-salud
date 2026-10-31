@@ -1,5 +1,8 @@
 const API = import.meta.env.VITE_API_URL;
 
+// Vite incrusta la variable al compilar; sin ella todas las peticiones fallarían sin una pista clara.
+if (!API) console.error('Falta VITE_API_URL: defínela en .env.local o en las variables de entorno de Vercel y vuelve a compilar.');
+
 export async function api(ruta, { method = 'GET', body } = {}) {
   const token = sessionStorage.getItem('token');
   const headers = {};
