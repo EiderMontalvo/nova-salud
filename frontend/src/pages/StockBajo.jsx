@@ -8,6 +8,7 @@ import Notice from '../components/Notice';
 import { SIN_IMAGEN } from '../components/ProductTile';
 import { mensajeError } from '../lib/errores';
 import { fecha } from '../lib/formato';
+import './StockBajo.css';
 
 function Tabla({ columnas, filas, vacio, cargando }) {
   if (cargando) return <div className="skeleton" style={{ height: 180 }} />;
@@ -40,7 +41,7 @@ function Tabla({ columnas, filas, vacio, cargando }) {
 function CeldaProducto({ p }) {
   return (
     <td>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div className="celda-producto">
         <img className="thumb" src={p.imagen || SIN_IMAGEN} alt="" loading="lazy" />
         <div>
           <div className="cell-name">{p.nombre}</div>
@@ -89,8 +90,8 @@ export default function StockBajo() {
   );
 
   return (
-    <div className="stack" style={{ gap: '2.5rem' }}>
-      <div className="page-head" style={{ marginBottom: 0 }}>
+    <div className="stack alertas">
+      <div className="page-head">
         <div>
           <h1 className="page-title">Alertas de inventario</h1>
           <p className="muted">Productos en o por debajo de su stock mínimo y productos que vencen pronto.</p>
@@ -100,7 +101,7 @@ export default function StockBajo() {
       <Notice>{error}</Notice>
 
       <section className="stack" aria-labelledby="titulo-stock">
-        <div className="row-head" style={{ marginBottom: 0 }}>
+        <div className="row-head">
           <h2 id="titulo-stock" className="row-title">Stock bajo</h2>
           {!cargando && <span className="tag tag-danger num">{stock.length}</span>}
         </div>
@@ -112,7 +113,7 @@ export default function StockBajo() {
             <tr key={p.id_producto}>
               <CeldaProducto p={p} />
               <td className="muted">{p.categoria}</td>
-              <td style={{ minWidth: 200 }}>
+              <td className="c-stock">
                 <StockEstado stock={p.stock} minimo={p.stock_minimo} />
               </td>
               {accion(p)}
@@ -122,7 +123,7 @@ export default function StockBajo() {
       </section>
 
       <section id="por-vencer" className="stack" aria-labelledby="titulo-vencer">
-        <div className="row-head" style={{ marginBottom: 0 }}>
+        <div className="row-head">
           <h2 id="titulo-vencer" className="row-title">Por vencer</h2>
           {!cargando && <span className="tag tag-warn num">{vencer.length}</span>}
         </div>
@@ -139,7 +140,9 @@ export default function StockBajo() {
                   {p.dias_restantes < 0 ? 'Vencido' : `${p.dias_restantes} días`}
                 </span>
               </td>
-              <td className="num">{p.stock}</td>
+              <td>
+                <StockEstado stock={p.stock} minimo={p.stock_minimo} mostrarMinimo={false} />
+              </td>
               {accion(p)}
             </tr>
           ))}

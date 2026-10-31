@@ -6,6 +6,7 @@ import { useCatalogo, filtrarProductos } from '../hooks/useCatalogo';
 import CategoryRow from '../components/CategoryRow';
 import ProductTile from '../components/ProductTile';
 import Notice from '../components/Notice';
+import { tieneMouse } from '../lib/dispositivo';
 import './Catalogo.css';
 
 function EsqueletoMuro() {
@@ -56,6 +57,7 @@ export default function Catalogo() {
 
   return (
     <div className="catalogo">
+      <h1 className="sr-only">Catálogo</h1>
       <div className="catalogo-head">
         <div className="search search-lg">
           <Search size={20} />
@@ -66,7 +68,7 @@ export default function Catalogo() {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             aria-label="Buscar producto"
-            autoFocus
+            autoFocus={tieneMouse()}
           />
         </div>
         <select
@@ -90,7 +92,7 @@ export default function Catalogo() {
       </div>
 
       {error && (
-        <div className="stack" style={{ marginBottom: '1.5rem' }}>
+        <div className="stack catalogo-error">
           <Notice>{error}</Notice>
           <div>
             <button type="button" className="btn btn-ghost" onClick={recargar}>

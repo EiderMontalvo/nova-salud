@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus, Pencil, EyeOff, RotateCcw, Tags } from 'lucide-react';
 import { api, cuerpoCategoria, traerTodos } from '../api';
 import CategoriaForm from '../components/CategoriaForm';
-import Notice from '../components/Notice';
 import { SIN_IMAGEN } from '../components/ProductTile';
+import { useToast } from '../context/ToastContext';
 import { mensajeError } from '../lib/errores';
 import './AdminCategorias.css';
 
@@ -12,7 +12,7 @@ export default function AdminCategorias() {
   const [productos, setProductos] = useState([]);
   const [activas, setActivas] = useState(true);
   const [cargando, setCargando] = useState(true);
-  const [aviso, setAviso] = useState(null);
+  const avisar = useToast();
   // undefined: cerrado; null: crear; objeto: editar.
   const [editando, setEditando] = useState(undefined);
 
@@ -21,11 +21,11 @@ export default function AdminCategorias() {
     try {
       setCategorias(await traerTodos(`/categorias?activo=${activas}`));
     } catch (err) {
-      setAviso({ tipo: 'error', texto: mensajeError(err, 'No se pudieron cargar las categorías.') });
+      avisar({ tipo: 'error', texto: mensajeError(err, 'No se pudieron cargar las categorías.') });
     } finally {
       setCargando(false);
     }
-  }, [activas]);
+  }, [activas, avisar]);
 
   useEffect(() => {
     cargar();
@@ -45,12 +45,11 @@ export default function AdminCategorias() {
 
   const alGuardar = (categoria, accion) => {
     setEditando(undefined);
-    setAviso({ tipo: 'success', texto: `Categoría «${categoria.nombre}» ${accion}.` });
+    avisar({ tipo: 'success', texto: `Categoría «${categoria.nombre}» ${accion}.` });
     cargar();
   };
 
   const cambiarEstado = async (categoria, activa) => {
-    setAviso(null);
     try {
       if (activa) {
         await api(`/categorias/${categoria.id_categoria}`, {
@@ -60,14 +59,14 @@ export default function AdminCategorias() {
       } else {
         await api(`/categorias/${categoria.id_categoria}`, { method: 'DELETE' });
       }
-      setAviso({
+      avisar({
         tipo: 'success',
         texto: `Categoría «${categoria.nombre}» ${activa ? 'reactivada' : 'desactivada'}.`,
-        deshacer: () => cambiarEstado(categoria, !activa),
+        accion: { texto: 'Deshacer', onClick: () => cambiarEstado(categoria, !activa) },
       });
       cargar();
     } catch (err) {
-      setAviso({ tipo: 'error', texto: mensajeError(err, 'No se pudo cambiar el estado.') });
+      avisar({ tipo: 'error', texto: mensajeError(err, 'No se pudo cambiar el estado.') });
     }
   };
 
@@ -82,14 +81,6 @@ export default function AdminCategorias() {
           <Plus size={16} /> Nueva categoría
         </button>
       </div>
-
-      {aviso && (
-        <div style={{ marginBottom: '1rem' }}>
-          <Notice tipo={aviso.tipo} accion={aviso.deshacer && { texto: 'Deshacer', onClick: aviso.deshacer }}>
-            {aviso.texto}
-          </Notice>
-        </div>
-      )}
 
       <div className="toolbar">
         <div className="segmented" role="group" aria-label="Estado">

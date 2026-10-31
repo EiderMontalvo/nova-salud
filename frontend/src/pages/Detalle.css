@@ -84,3 +84,11 @@
     max-width: 420px;
   }
 }
+
+.detalle-error {
+  max-width: 520px;
+}
+
+.detalle-volver {
+  margin-bottom: 1.5rem;
+}

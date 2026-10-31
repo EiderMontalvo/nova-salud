@@ -5,10 +5,11 @@ import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useVenta } from '../context/VentaContext';
 import StockEstado from '../components/StockEstado';
+import FechaVencimiento from '../components/FechaVencimiento';
 import Notice from '../components/Notice';
 import { SIN_IMAGEN } from '../components/ProductTile';
 import { mensajeError } from '../lib/errores';
-import { soles, fecha, estadoVencimiento } from '../lib/formato';
+import { soles } from '../lib/formato';
 import './Detalle.css';
 
 export default function ProductoDetalle() {
@@ -54,7 +55,7 @@ export default function ProductoDetalle() {
 
   if (error || !producto) {
     return (
-      <div className="stack" style={{ maxWidth: 520 }}>
+      <div className="stack detalle-error">
         <Notice>{error || 'Producto no encontrado'}</Notice>
         <div>
           <Link to="/" className="btn btn-ghost">
@@ -66,12 +67,11 @@ export default function ProductoDetalle() {
   }
 
   const enVenta = items.find((i) => i.id_producto === producto.id_producto);
-  const vence = estadoVencimiento(producto.fecha_vencimiento);
   const agotado = producto.stock === 0;
 
   return (
     <div>
-      <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: '1.5rem' }}>
+      <Link to="/" className="btn btn-ghost btn-sm detalle-volver">
         <ArrowLeft size={14} /> Catálogo
       </Link>
 
@@ -104,9 +104,8 @@ export default function ProductoDetalle() {
             </div>
             <div>
               <dt>Vencimiento</dt>
-              <dd className="num">
-                {fecha(producto.fecha_vencimiento)}
-                {vence && <span className={`tag tag-${vence.tipo}`} style={{ marginLeft: 8 }}>{vence.texto}</span>}
+              <dd>
+                <FechaVencimiento valor={producto.fecha_vencimiento} />
               </dd>
             </div>
           </dl>
