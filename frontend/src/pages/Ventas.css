@@ -51,7 +51,7 @@
 }
 
 .pos-card:hover:not(:disabled) {
-  box-shadow: var(--shadow-lift), inset 0 0 0 1.5px var(--primary);
+  box-shadow: var(--shadow-lift), inset 0 0 0 1.5px var(--primary-line);
   transform: translateY(-2px);
 }
 
@@ -60,7 +60,7 @@
 }
 
 .pos-card.is-in {
-  box-shadow: var(--shadow-sm), inset 0 0 0 1.5px var(--primary);
+  box-shadow: var(--shadow-sm), inset 0 0 0 1.5px var(--primary-line);
 }
 
 .pos-card:disabled {
@@ -129,7 +129,7 @@
 
 .pos-ticket {
   position: sticky;
-  top: 2rem;
+  top: calc(var(--topbar) + 1.5rem);
 }
 
 .ticket {
@@ -281,7 +281,7 @@
 }
 
 .stepper input:focus {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--primary-line);
   outline-offset: -2px;
 }
 
@@ -300,6 +300,71 @@
 .ticket-total .price {
   font-size: 2rem;
   line-height: 1;
+}
+
+/* Cliente: búsqueda puntual (no se lista la cartera) y alta rápida en la misma fila */
+
+.cliente-buscador {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.cliente-fila {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cliente-fila .search {
+  flex: 1;
+  min-width: 0;
+}
+
+.cliente-resultados {
+  padding: 0.375rem;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-lift);
+}
+
+.cliente-resultados li[role='option'] {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cliente-resultados li[role='option']:hover,
+.cliente-resultados li.is-activo {
+  background: var(--elevated);
+}
+
+.cliente-sin-resultados {
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-2);
+}
+
+.cliente-elegido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.5rem 0.5rem 0.5rem 0.875rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+
+.cliente-elegido-nombre {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
 }
 
 /* Forma de pago y cobro */
@@ -324,16 +389,30 @@
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 
+.metodo-marca {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+}
+
+.metodo-marca img {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  object-fit: contain;
+}
+
 .metodos button:hover {
-  border-color: var(--primary);
+  border-color: var(--primary-line);
   color: var(--primary);
 }
 
 .metodos button[aria-pressed='true'] {
-  border-color: var(--primary);
+  border-color: var(--primary-line);
   background: var(--accent-soft);
   color: var(--primary);
-  box-shadow: inset 0 0 0 1px var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary-line);
 }
 
 .cobro {
@@ -366,7 +445,7 @@
 }
 
 .billetes button:hover:not(:disabled) {
-  border-color: var(--primary);
+  border-color: var(--primary-line);
   color: var(--primary);
 }
 
@@ -393,12 +472,33 @@
   color: var(--danger);
 }
 
-.confirmar-pago {
-  padding: 0.75rem;
-  border-radius: var(--radius-sm);
-  background: var(--warn-soft);
-  color: var(--warn-text);
-  font-weight: 500;
+/* Cobro sin efectivo: pasos numerados como texto de apoyo y la confirmación como dato principal */
+.pago-pasos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-left: 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.pago-pasos li::marker {
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pago-confirmar {
+  align-items: flex-start;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--line-strong);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.pago-confirmar input {
+  flex: none;
+  margin-top: 2px;
 }
 
 /* Comprobante como ticket impreso */
@@ -483,6 +583,38 @@
   gap: 0.5rem;
 }
 
+/* Ticket de venta en escritorio: cabe en la pantalla; el cuerpo desplaza y el pie no se va. */
+.ticket-venta {
+  /* Alto de pantalla menos la barra superior, el margen de la página (2rem) y un respiro inferior. */
+  max-height: calc(100dvh - var(--topbar) - 3.5rem);
+}
+
+.ticket-cuerpo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0 -1.25rem;
+  padding: 0.125rem 1.25rem 0.25rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Dentro del cuerpo la lista no lleva scroll propio: evita un scroll anidado. */
+.ticket-cuerpo .ticket-items {
+  max-height: none;
+  overflow: visible;
+}
+
+.ticket-pie {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
 @media (max-width: 1180px) {
   .pos-cuerpo {
     grid-template-columns: 1fr;
@@ -490,6 +622,14 @@
 
   .pos-ticket {
     position: static;
+  }
+
+  .ticket-venta {
+    max-height: none;
+  }
+
+  .ticket-cuerpo {
+    overflow: visible;
   }
 }
 
